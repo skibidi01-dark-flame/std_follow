@@ -1,0 +1,1927 @@
+<title>ติดตามการมอบตัว</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F8FAF7; --ink:#18232B; --muted:#5B6870; --faint:#89959B;
+  --line:#DDE3DF; --line-strong:#C6CFCA;
+  --ok:#0D6B53; --ok-soft:#DDF0E8; --ok-line:#9FD2BE;   /* สี "เข้าแล้ว" — คงที่ ไม่เปลี่ยนตามธีม */
+  --accent:#0D6B53; --accent-ink:#FFFFFF;
+  --accent-soft:color-mix(in srgb,var(--accent) 14%,var(--surface)); --accent-line:color-mix(in srgb,var(--accent) 42%,var(--surface));
+  --tagP:#ECE6F5; --tagP-ink:#5A3F8C; --tagR:#FDE2E1; --tagR-ink:#A3231B; --tagG:#E3F1EA; --tagG-ink:#1F5F4A; --moved:#F4F0FA;
+  --chip-strength:11%;   /* ความเข้มของสีป้ายการเงิน (สีจากตาราง) ยิ่งน้อยยิ่งอ่อน */
+  --chip-ink:#000;
+  --warn:#9A6212; --warn-soft:#FBEFD6; --off:#66727A; --off-soft:#ECEFEF;
+  --err:#B23A2E; --err-soft:#FBE3DF; --flash:#FFF1AE;
+  --gA:#F2CDC5; --gA-ink:#7B2C20; --gB:#F7E8B8; --gB-ink:#6A5210;
+  --gC:#3F7ED8; --gC-ink:#FFFFFF; --gD:#CFE0F3; --gD-ink:#1E4C78;
+  --g0:#ECEFEF; --g0-ink:#5B6870;
+  --shadow:0 1px 2px rgba(24,35,43,.05),0 10px 30px -18px rgba(24,35,43,.25);
+  --f-display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai","Sarabun","Leelawadee UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+/* ---------- โหมดมืด ---------- */
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10171B; --surface:#172025; --surface-2:#1D272D; --ink:#E4EBE8; --muted:#9BA9AF; --faint:#6F7D83;
+  --line:#28343A; --line-strong:#38454C;
+  --ok:#5CCBA4; --ok-soft:#173A30; --ok-line:#2F6B57;
+  --accent:#5CCBA4; --accent-ink:#0B1F18;
+  --warn:#E6B266; --warn-soft:#3A2D16; --off:#9BA9AF; --off-soft:#232D32;
+  --err:#F08C80; --err-soft:#3E201C; --flash:#4A4214;
+  --gA:#4D2A23; --gA-ink:#F4C6BC; --gB:#47391A; --gB-ink:#F0DB9E; --gC:#3A73C6; --gC-ink:#FFFFFF; --gD:#203851; --gD-ink:#C1D7F1;
+  --g0:#263136; --g0-ink:#AAB6BB;
+  --tagP:#2F2640; --tagP-ink:#CDB8F0; --tagR:#43201E; --tagR-ink:#F5AAA2; --tagG:#173A30; --tagG-ink:#9BDDC4; --moved:#2A2338;
+  --chip-strength:24%; --chip-ink:#fff;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px -18px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font:15px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{max-width:1180px;margin:0 auto;padding:0 20px 64px;display:flex;flex-direction:column;gap:18px}
+@media (max-width:520px){.app{padding:0 16px 64px}}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:14px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:40px;height:40px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;
+  font:700 15px/1 var(--f-display);letter-spacing:.02em;flex:none}
+h1{font:600 21px/1.2 var(--f-display);margin:0;text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62vw}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sync{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);padding:6px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.sync .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.sync.ok .dot{background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2.4s infinite}
+.sync.err{color:var(--err);border-color:var(--err)}
+.sync.err .dot{background:var(--err)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:7px 12px;
+  cursor:pointer;text-decoration:none;font-size:14px;color:var(--ink);transition:background .15s,border-color .15s}
+.btn:hover{border-color:var(--accent-line);background:var(--surface-2)}
+.btn.icon{padding:7px 9px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07);background:var(--accent)}
+.btn:disabled{opacity:.55;cursor:default}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{flex:none}
+
+.demo{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;background:var(--warn-soft);color:var(--ink);
+  border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:var(--r);padding:10px 14px;font-size:14px}
+.demo b{color:var(--warn)}
+
+/* summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;text-align:left;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;transition:border-color .15s,box-shadow .15s}
+.tile:hover{border-color:var(--line-strong)}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tile .t-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.tile .big{font:500 26px/1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.tile .big small{font-size:15px;color:var(--faint)}
+.tile .cap{font-size:12.5px;color:var(--muted)}
+.bar{height:6px;border-radius:99px;background:var(--off-soft);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:99px;transition:width .4s}
+.tile.total{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tile.total .t-top,.tile.total .cap{color:color-mix(in srgb,var(--bg) 72%,var(--ink))}
+.tile.total .big small{color:color-mix(in srgb,var(--bg) 60%,var(--ink))}
+.tile.total .bar{background:color-mix(in srgb,var(--bg) 18%,var(--ink))}
+.tile.total .bar i{background:var(--ok-line)}
+.tile.total[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+
+/* chips */
+.gchip{display:inline-flex;align-items:center;font:600 12.5px/1 var(--f-body);padding:4px 8px;border-radius:6px;letter-spacing:.01em;white-space:nowrap}
+.gA{background:var(--gA);color:var(--gA-ink)} .gB{background:var(--gB);color:var(--gB-ink)}
+.gC{background:var(--gC);color:var(--gC-ink)} .gD{background:var(--gD);color:var(--gD-ink)}
+.g0{background:var(--g0);color:var(--g0-ink)}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search{flex:1 1 260px;position:relative}
+.finsel{appearance:none;-webkit-appearance:none;flex:0 1 200px;min-width:0;padding:9px 30px 9px 11px;border-radius:8px;border:1px solid var(--line-strong);font-size:14px;cursor:pointer;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2389959B' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center}
+.finsel.on{border-color:var(--accent);background-color:var(--accent-soft);color:var(--accent);font-weight:600}
+@media (max-width:1020px){ #roomView .toolbar .search{flex:1 1 0;min-width:0} #roomView .toolbar .finsel{flex:0 0 170px} #roomView .toolbar .seg{flex-basis:100%} }
+@media (max-width:620px){ #roomView .toolbar .finsel{flex:0 0 128px;font-size:13px;padding-left:9px} }
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--faint)}
+.search input{width:100%;padding:9px 12px 9px 36px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface)}
+.seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px}
+.seg button{border:0;background:transparent;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:13.5px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button .n{font-family:var(--f-mono);font-size:12px;opacity:.75;margin-left:4px}
+@media (max-width:620px){
+  /* มือถือ: ปุ่มกรองเป็นแถวเดียวเลื่อนซ้าย-ขวา ไม่ให้แถบที่ติดด้านบนสูงเกินไป */
+  .toolbar .seg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .toolbar .seg::-webkit-scrollbar{display:none}
+  .roombar{flex-wrap:nowrap}
+  .roombar .roomsel{flex:1 1 0;min-width:0}
+  .roombar #btnBack{flex:none;padding-left:9px;padding-right:11px}
+  .toolbar{gap:6px}
+}
+.count{margin:0;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* list */
+.list{display:flex;flex-direction:column;gap:8px}
+.row{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);
+  display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,.95fr) minmax(0,1.15fr) minmax(0,1.35fr) 176px;align-items:center;gap:16px;
+  padding:14px 14px 14px 16px;border-left:4px solid var(--line-strong)}
+.row.s-done{border-left-color:var(--ok)}
+.row.s-not{border-left-color:var(--warn)}
+.row.s-locked{border-left-color:var(--off);background:var(--surface-2)}
+.who{min-width:0}
+.name{font-weight:600;font-size:15.5px;line-height:1.35;overflow-wrap:anywhere}
+.meta{margin-top:3px;font-size:12.5px;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.kv{margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kv>div{display:flex;gap:8px;align-items:baseline;min-width:0}
+.kv dt{font-size:11.5px;color:var(--faint);flex:none;width:74px;letter-spacing:.01em}
+.kv dd{margin:0;font:400 13.5px/1.4 var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;user-select:all}
+.kv dd.none{color:var(--faint);user-select:none}
+.kv dd a.clink{color:var(--accent);text-decoration:none;user-select:text;border-bottom:1px dashed var(--accent-line)}
+.kv dd a.clink:hover{border-bottom-style:solid}
+.kv dd.txt{font-family:inherit}
+.psec{display:flex;flex-direction:column;gap:4px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+.psec h3{margin:0 0 2px;font:600 15px/1.3 var(--f-display)}
+.psec .hint a{color:var(--accent)}
+.inrow.wrap{flex-wrap:wrap}
+.inrow select{flex:1;min-width:0}
+.syncbox{font-size:13.5px;line-height:1.55;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-wrap:anywhere}
+.syncbox b{color:var(--ink);font-weight:600}
+.syncbox .bad{color:var(--err)}
+.syncbox ul{margin:4px 0 0;padding-left:18px}
+.lbl2{font-size:13px;color:var(--muted);margin-top:6px}
+.tabpick{display:flex;flex-direction:column;gap:2px}
+.tabpick label{display:flex;align-items:flex-start;gap:8px;margin:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);font-size:14px;cursor:pointer}
+.panel .tabpick input{width:auto;flex:none;margin-top:3px;padding:0}
+.tabpick label>span{flex:1;min-width:0}
+.tabpick label:has(input:checked){border-color:var(--accent-line);background:var(--accent-soft)}
+.tabpick small{display:block;color:var(--muted);font-size:12.5px}
+.colmap summary{cursor:pointer;font-size:13.5px;color:var(--accent);padding:4px 0}
+.cmgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;margin-top:6px}
+.cmgrid label{margin:0;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.cmgrid input{text-transform:uppercase;padding:7px 9px}
+.syncbox code{font:12.5px var(--f-mono);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.study{display:flex;flex-direction:column;gap:5px;min-width:0}
+.study .lv{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.term{font-size:12.5px;color:var(--muted)}
+.major{font-size:13.5px;line-height:1.4;overflow-wrap:anywhere}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat>span{font-size:11.5px;color:var(--faint)}
+select.pick{appearance:none;-webkit-appearance:none;width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:8px 30px 8px 11px;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2389959B' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 11px center;
+  font-size:14px;font-weight:600;cursor:pointer}
+select.pick.st-done{background-color:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
+select.pick.st-locked{background-color:var(--off-soft);color:var(--off)}
+select.pick.st-not{background-color:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent);color:var(--warn)}
+select.pick:hover{filter:brightness(.98)}
+.locked{display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:8px;background:var(--off-soft);color:var(--off);font-weight:600;font-size:14px;cursor:help}
+.saving{opacity:.6;pointer-events:none}
+.flash{animation:flash 2.6s ease-out}
+@keyframes flash{0%,35%{background-color:var(--flash)}100%{background-color:transparent}}
+
+@media (max-width:1020px){
+  .row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 176px;gap:12px 16px}
+  .who{grid-column:1/3}
+  .stat{grid-column:3;grid-row:1/3}
+  .dates{grid-column:1;grid-row:2}
+  .phones{grid-column:2;grid-row:2}
+  .study{grid-column:1/4;grid-row:3;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px 12px;padding-top:10px;border-top:1px dashed var(--line)}
+}
+@media (max-width:620px){
+  .row{grid-template-columns:minmax(0,1fr);gap:10px;padding:12px 12px 12px 14px}
+  .who,.stat,.dates,.phones,.study{grid-column:1;grid-row:auto}
+  .study{order:2;border-top:0;padding-top:0}
+  .dates{order:3} .phones{order:4}
+  .stat{order:5;padding-top:6px;border-top:1px dashed var(--line)}
+}
+/* หน้ารายละเอียด: ใช้โครงเดียวกับมือถือทุกขนาดจอ */
+.sheet #detailBody,.sheet .shead{max-width:640px;margin-left:auto;margin-right:auto}
+.sheet .row{grid-template-columns:minmax(0,1fr);gap:10px;padding:14px 14px 14px 16px}
+.sheet .who,.sheet .stat,.sheet .dates,.sheet .phones,.sheet .study{grid-column:1;grid-row:auto}
+.sheet .study{order:2;border-top:0;padding-top:0;flex-direction:row;align-items:center;flex-wrap:wrap;gap:6px 12px}
+.sheet .dates{order:3} .sheet .phones{order:4}
+.sheet .stat{order:5;padding-top:6px;border-top:1px dashed var(--line)}
+.sheet .row .fin,.sheet .row .note{order:1}
+.sheet .row .note{order:6}
+/* รายชื่อแบบย่อ: จอกว้างแสดง 2 คอลัมน์ (โครงเดียวกับมือถือ) */
+@media (min-width:980px){
+  .list.compact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;align-items:start}
+  .list.compact > .mgroup,.list.compact > .empty{grid-column:1/-1}
+  .crow .cstat{width:150px}
+}
+
+.empty,.loading{background:var(--surface);border:1px dashed var(--line-strong);border-radius:var(--r);padding:36px 20px;text-align:center;color:var(--muted)}
+.loading .sk{height:14px;border-radius:6px;background:linear-gradient(90deg,var(--off-soft),var(--surface-2),var(--off-soft));background-size:200% 100%;animation:sk 1.4s infinite;margin:10px auto;max-width:420px}
+@keyframes sk{to{background-position:-200% 0}}
+.errbox{background:var(--err-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--err) 40%,transparent);border-radius:var(--r);padding:14px 16px}
+.errbox b{color:var(--err)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted);margin:0}
+.legend b{font-weight:600;color:var(--ink)}
+
+/* rooms */
+.view{display:flex;flex-direction:column;gap:16px}
+.home-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px 16px}
+.h2{font:600 22px/1.2 var(--f-display);margin:0;text-wrap:balance}
+.home-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.rooms .tile .rn{font:600 19px/1.2 var(--f-display);color:var(--ink)}
+.rooms .tile .rc span{white-space:nowrap}
+.rooms .tile .rc{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rooms .tile .rc b{font:500 17px/1 var(--f-mono)}
+.c-done{color:var(--ok)} .c-not{color:var(--warn)} .c-off{color:var(--off)}
+.roombar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* ติดขอบบนตอนเลื่อนจอ: แถบกลับ/เปลี่ยนห้อง และช่องค้นหา/ตัวกรอง */
+.roombar,.toolbar{position:sticky;z-index:6;background:var(--bg)}
+body.inroom .top{position:static}
+.roombar{top:0;padding:8px 0;margin:-8px 0}
+.toolbar{top:var(--rbh,52px);padding:8px 0;margin:-8px 0}
+.roombar.stuck,.toolbar.stuck{box-shadow:0 8px 10px -8px rgba(16,24,32,.18)}
+.roombar.flat{box-shadow:none}
+.roomsel{appearance:none;-webkit-appearance:none;min-width:0;max-width:100%;flex:0 1 280px;padding:8px 34px 8px 12px;border-radius:8px;border:1px solid var(--line-strong);font-weight:600;cursor:pointer;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2389959B' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center}
+.roomhead{display:flex;flex-direction:column;gap:2px}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+.roomhead h2{font:700 36px/1.1 var(--f-display);margin:0;letter-spacing:-.01em;overflow-wrap:anywhere}
+.roomhead p{margin:4px 0 0;color:var(--muted);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.st-tile{text-align:left;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;transition:box-shadow .15s}
+.st-tile .lbl{font-size:14px;font-weight:600}
+.st-tile .num{font:500 44px/1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.st-tile .num small{font-size:16px;font-family:var(--f-body);letter-spacing:0;margin-left:4px;color:var(--muted)}
+.st-tile.done{background:var(--ok-soft);border-color:var(--ok-line)} .st-tile.done .lbl,.st-tile.done .num{color:var(--ok)}
+.st-tile.not{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent)} .st-tile.not .lbl,.st-tile.not .num{color:var(--warn)}
+.st-tile.off .lbl,.st-tile.off .num{color:var(--off)}
+.st-tile[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.roomprog{display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.roomprog .bar{flex:1;height:8px}
+.share{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted);background:var(--surface);border:1px dashed var(--line-strong);border-radius:var(--r);padding:10px 12px}
+.share input{flex:1 1 260px;min-width:0;font:12.5px/1.4 var(--f-mono);padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* จอสัมผัส (มือถือ / iPad): ปุ่มใหญ่พอให้นิ้วกด และตัวอักษรในช่องกรอก 16px กัน iPhone ซูมเอง */
+@media (pointer:coarse){
+  .btn,.seg button,select.pick,.roomsel,.quick{min-height:44px}
+  .seg button{padding:8px 12px}
+  input,select,textarea{font-size:16px!important}
+  .st-tile{min-height:88px}
+}
+/* iPad แนวนอน / notebook จอเล็ก */
+@media (min-width:621px) and (max-width:1020px){
+  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:1020px){ .toolbar .search{flex-basis:100%} }
+/* มือถือแนวนอน จอเตี้ย: แถบบนไม่ต้องค้าง จะได้มีที่ให้รายชื่อมากขึ้น */
+@media (max-height:520px){ .top{position:static} }
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+
+.stat>.sthead{font-size:12px;font-weight:600;color:var(--muted)}
+.stat>.lockhint,.lockhint{font-size:11.5px;line-height:1.35;color:var(--faint)}
+.offline{background:var(--err-soft);color:var(--err);border:1px solid color-mix(in srgb,var(--err) 40%,transparent);border-radius:var(--r);padding:10px 14px;font-size:14px;font-weight:600}
+.toast{align-items:center}
+.toast .tmsg{flex:1;min-width:0}
+.tact{flex:none;border:1px solid currentColor;background:transparent;color:inherit;border-radius:7px;padding:5px 12px;font-weight:600;cursor:pointer;min-height:34px}
+.tact:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+
+/* สาขา */
+.majors{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.mlabel{font-size:13px;color:var(--muted);margin-right:2px}
+.mchip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface);border-radius:99px;
+  padding:7px 14px;font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);max-width:100%;text-align:left}
+.mchip:hover{border-color:var(--accent-line)}
+.mchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.mchip .mc{font:500 12.5px/1 var(--f-mono);opacity:.8}
+.mchip .mleft{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
+.mchip .mok{font-size:11.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--ok-soft);color:var(--ok)}
+.mgroup{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:10px 0 0;padding:8px 2px 6px;
+  border-bottom:2px solid var(--ink);font:600 17px/1.3 var(--f-display)}
+.mgroup:first-child{margin-top:0}
+.mgroup .mgc{font:400 13px/1.3 var(--f-body);color:var(--muted)}
+@media (pointer:coarse){ .mchip{min-height:44px} }
+
+.pickhint{flex-basis:100%;margin:2px 0 0;font-size:14px;color:var(--muted)}
+#roomView.needpick #stats,#roomView.needpick #roomProg,#roomView.needpick .toolbar,
+#roomView.needpick #count,#roomView.needpick #list{display:none}
+
+#roomView.noscope #stats,#roomView.noscope #roomProg,#roomView.noscope .toolbar,
+#roomView.noscope #count{display:none}
+.empty.nodata{display:flex;flex-direction:column;gap:6px;align-items:center;padding:44px 20px}
+.empty.nodata b{font:600 20px/1.3 var(--f-display);color:var(--ink)}
+.empty.nodata span{max-width:46ch;font-size:14px}
+
+.dq{display:flex;flex-direction:column;gap:4px;background:var(--warn-soft);color:var(--warn);border-radius:var(--r);padding:9px 12px;font-size:13.5px;font-weight:600}
+.sync.stale{color:var(--warn);border-color:var(--warn)}
+.sync.stale .dot{background:var(--warn);animation:none}
+.sharerow{display:flex;gap:8px;flex:1 1 320px;min-width:0}
+.sharerow input{flex:1;min-width:0}
+.elsewhere{display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:14px}
+.elsewhere p{margin:0 0 2px;font-size:13.5px;color:var(--muted)}
+.elsewhere .btn{max-width:100%;white-space:normal;text-align:left}
+
+.locked .ltxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.locked.odd{background:var(--err-soft);color:var(--err)}
+
+/* กลุ่มพิเศษ */
+.h3{font:600 17px/1.3 var(--f-display);margin:8px 0 0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.h3 span{font:400 13px/1.3 var(--f-body);color:var(--muted)}
+.gS{background:var(--tagP);color:var(--tagP-ink)}
+.tile.special{border-style:dashed}
+.termbox{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.termbox label{font-weight:600;font-size:14px}
+.termbox input{flex:0 1 220px;min-width:0;padding:8px 11px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);font:500 15px/1.2 var(--f-mono)}
+.termchips{display:flex;flex-wrap:wrap;gap:6px}
+.termhint{flex-basis:100%;margin:0;font-size:13px;color:var(--muted)}
+.termhint:empty{display:none}
+/* มือถือ: รายชื่อแบบย่อ แตะเพื่อดูรายละเอียด */
+.crow{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:var(--r);padding:11px 10px 11px 13px;cursor:pointer;box-shadow:var(--shadow)}
+.crow.s-done{border-left-color:var(--ok)}
+.crow.s-not{border-left-color:var(--warn)}
+.crow.s-locked{border-left-color:var(--off);background:var(--surface-2)}
+.crow:active{background:var(--surface-2)}
+.crow .cmain{flex:1;min-width:0}
+.crow .name{font-size:15.5px}
+.crow .csub{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px;font-size:13px;color:var(--muted)}
+.crow .csub .gchip{font-size:11.5px}
+.crow .cstat{flex:none;width:118px}
+.crow select.pick{padding:7px 24px 7px 8px;font-size:13px;background-position:right 7px center}
+.crow .cstat .locked{padding:6px 8px;font-size:12.5px}
+.crow .chev{flex:none;color:var(--faint);font-size:20px;line-height:1}
+.sheet{position:fixed;inset:0;z-index:25;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.sheet .shead{position:sticky;top:0;z-index:2;background:var(--bg);display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.sheet .shead h2{margin:0;font:600 17px/1.3 var(--f-display);min-width:0;overflow-wrap:anywhere}
+.sheet .row{box-shadow:none}
+.row .fin{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;border-top:1px dashed var(--line);padding-top:8px;font-size:13.5px}
+.ftag{font-weight:600;font-size:12.5px;padding:2px 8px;border-radius:6px;background:var(--tagG);color:var(--tagG-ink);white-space:nowrap}
+.ftext{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.row .note{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;border-top:1px dashed var(--line);padding-top:8px;font-size:13.5px}
+.ntag{font-weight:600;font-size:12.5px;padding:2px 8px;border-radius:6px;background:var(--tagP);color:var(--tagP-ink);white-space:nowrap}
+.ntag.nsp{background:var(--tagR);color:var(--tagR-ink)}
+/* ป้ายประเภทการเงิน: สีพื้นเอามาจากสีช่องในตาราง Sheet A (inline style) · ไม่มีสี = สีกลาง */
+.fchip{display:inline-flex;align-items:center;font:600 11.5px/1 var(--f-body);padding:4px 8px;border-radius:6px;white-space:nowrap;background:var(--g0);color:var(--g0-ink);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.ftag[style]{box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+/* ป้ายที่ใช้สีจากตาราง: --fc = สีช่องใน Sheet A · ผสมกับสีพื้นให้อ่อนลง (โหมดมืดผสมกับพื้นมืด) */
+[data-tc]{background:color-mix(in srgb,var(--fc) var(--chip-strength),var(--surface))!important;
+  color:color-mix(in srgb,var(--fc) 40%,var(--chip-ink))!important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--fc) 35%,var(--surface))!important}
+:root[data-theme="dark"] [data-tc]{color:color-mix(in srgb,var(--fc) 55%,#fff)!important}
+/* ปุ่มธีม */
+.thwrap{position:relative}
+.thmenu{position:fixed;right:16px;top:64px;z-index:35;width:min(230px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line-strong);
+  border-radius:12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.35);padding:14px;display:flex;flex-direction:column;gap:12px}
+.thmenu h3{margin:0;font:600 13px/1.2 var(--f-body);color:var(--muted)}
+.thmodes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.thmodes button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 4px;border-radius:9px;border:1px solid var(--line-strong);background:var(--surface);cursor:pointer;font-size:13px}
+.thmodes button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:600}
+.thmodes svg{width:18px;height:18px}
+@media (max-width:620px){.thmenu{left:16px;right:16px!important;width:auto}}
+.ntext{min-width:0;overflow-wrap:anywhere;color:var(--ink)}
+.ntext b{color:var(--muted);font-weight:600}
+@media (max-width:620px){ .row .note{order:6} }
+
+.moved{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;background:var(--moved);color:var(--tagP-ink);border-radius:var(--r);padding:9px 12px;font-size:13.5px;font-weight:600}
+.moved .btn{padding:5px 12px;font-size:13.5px}
+
+/* drawer + gate */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(10,16,20,.45);display:flex;justify-content:flex-end}
+.panel{width:min(440px,100%);height:100%;overflow:auto;background:var(--surface);padding:calc(22px + env(safe-area-inset-top,0px)) 22px calc(22px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;gap:12px;box-shadow:-10px 0 40px rgba(0,0,0,.2)}
+.panel h2{font:600 20px/1.2 var(--f-display);margin:0}
+.hint{margin:0;color:var(--muted);font-size:13.5px}
+.panel label{font-size:13px;color:var(--muted);margin-top:6px}
+.panel input,.panel select{width:100%;padding:9px 11px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface-2)}
+.inrow{display:flex;gap:8px}
+.inrow input{flex:1}
+.msg{font-size:13.5px;margin:0;min-height:1.4em;color:var(--muted)}
+.msg.bad{color:var(--err)}
+.pbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:auto;padding-top:12px}
+.gate{position:fixed;inset:0;z-index:30;background:var(--bg);display:grid;place-items:center;padding:20px}
+.gate form{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)}
+.gate input{font:500 22px/1 var(--f-mono);letter-spacing:.3em;text-align:center;padding:12px;border:1px solid var(--line-strong);border-radius:9px;background:var(--surface-2)}
+
+.toasts{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:8px;width:min(460px,calc(100% - 32px))}
+.toast{background:var(--ink);color:var(--bg);border-radius:9px;padding:10px 14px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);display:flex;gap:8px;align-items:flex-start;animation:tin .2s ease-out}
+.toast.err{background:var(--err);color:#fff}
+@keyframes tin{from{transform:translateY(8px);opacity:0}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<script>
+// ใช้ธีมที่เคยเลือกไว้ทันที (ก่อนวาดหน้า) จะได้ไม่กระพริบเป็นสีสว่างก่อน
+(function(){
+  var g = function(k){ try { return localStorage.getItem('mobtua.' + k); } catch(e){ return null; } };
+  document.documentElement.setAttribute('data-theme', g('theme') === 'dark' ? 'dark' : 'light');
+})();
+</script>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">มต</div>
+      <div style="min-width:0">
+        <h1>ติดตามการมอบตัว</h1>
+        <p class="sub" id="sub">กำลังเชื่อมต่อ Google Sheet…</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="sync" id="sync" aria-live="polite"><i class="dot"></i><span id="syncText">กำลังโหลด…</span></span>
+      <div class="thwrap">
+        <button class="btn icon" id="btnTheme" aria-label="ปรับธีมของเว็บ" title="ปรับธีม (สว่าง / มืด)" aria-haspopup="true" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+        </button>
+        <div class="thmenu" id="themeMenu" hidden role="dialog" aria-label="ปรับธีม">
+          <h3>โหมดสี</h3>
+          <div class="thmodes" id="thModes">
+            <button type="button" data-mode="light" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>สว่าง</button>
+            <button type="button" data-mode="dark" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>มืด</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn icon" id="btnSettings" aria-label="ตั้งค่าฐานข้อมูล (ผู้ดูแล)" title="ตั้งค่าฐานข้อมูล (ผู้ดูแล)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="offline" id="offline" hidden role="alert">ไม่มีอินเทอร์เน็ต · ข้อมูลที่เห็นอาจไม่ใช่ล่าสุด และยังเปลี่ยนสถานะไม่ได้จนกว่าจะเชื่อมต่อใหม่</div>
+  <div class="offline" id="verWarn" hidden role="alert">ไฟล์ Code.gs กับ Index.html เป็นคนละเวอร์ชัน หน้าเว็บอาจทำงานผิด · ผู้ดูแล: วางทั้ง 2 ไฟล์ล่าสุดให้ครบ แล้ว Deploy → New version</div>
+  <div class="demo" id="demoBar" hidden>
+    <span><b>หน้าตัวอย่าง</b> · รายชื่อด้านล่างเป็นชื่อสมมติ เมื่อติดตั้งใน Google Apps Script หน้านี้จะแสดงข้อมูลจริงจากชีตของคุณ</span>
+    <button class="btn" id="btnSimulate">ลองจำลองว่ามีคนแก้ในชีต</button>
+  </div>
+
+  <div class="loading" id="boot"><div class="sk"></div><div class="sk" style="max-width:300px"></div><p>กำลังโหลดข้อมูลจาก Google Sheet…</p></div>
+
+  <!-- หน้าเลือกห้อง -->
+  <section class="view" id="home" hidden>
+    <div class="home-head">
+      <div><h2 class="h2">เลือกห้องที่ต้องการดู</h2><p id="homeSum"></p></div>
+      <button class="btn" type="button" data-goroom="__all">ดูรายชื่อทุกห้อง</button>
+    </div>
+    <div class="rooms" id="rooms"></div>
+    <h3 class="h3">กลุ่มพิเศษ <span>แยกจากห้องปกติ</span></h3>
+    <div class="rooms" id="specialRooms"></div>
+  </section>
+
+  <!-- หน้าห้อง -->
+  <section class="view" id="roomView" hidden>
+  <div class="roombar">
+    <button class="btn" type="button" id="btnBack">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>ทุกห้อง
+    </button>
+    <label class="sr" for="roomSel">เปลี่ยนห้อง</label>
+    <select class="roomsel" id="roomSel"></select>
+  </div>
+  <div class="roomhead"><span class="eyebrow" id="roomEyebrow">ห้อง</span><h2 id="roomName"></h2><p id="roomTerm"></p></div>
+  <div class="majors" id="majors" role="group" aria-label="เลือกสาขา" hidden></div>
+  <div class="dq" id="dq" role="note" hidden></div>
+  <div class="moved" id="moved" role="note" hidden></div>
+  <div class="termbox" id="termBox" hidden>
+    <label for="termIn">ดูเก็บเกรดของเทอม</label>
+    <input id="termIn" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="search" placeholder="เช่น 1/69 หรือ 1.69">
+    <div class="termchips" id="termChips"></div>
+    <p class="termhint" id="termHint"></p>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="roomprog" id="roomProg"></div>
+
+  <section class="toolbar">
+    <label class="search" for="q">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="ค้นหาชื่อ เลขที่ใบสมัคร เบอร์โทร หรือสาขา" autocomplete="off">
+    </label>
+    <label class="sr" for="finSel">กรองตามโปร / การเงิน</label>
+    <select class="finsel" id="finSel" aria-label="กรองตามโปร / การเงิน"></select>
+    <div class="seg" id="statusFilter" aria-label="กรองตามสถานะ"></div>
+  </section>
+
+  <p class="count" id="count"></p>
+  <div class="list" id="list"></div>
+  </section>
+</div>
+
+<div class="scrim" id="drawer" hidden>
+  <aside class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">ตั้งค่าฐานข้อมูล</h2>
+    <p class="hint">สำหรับผู้ดูแล ระบบอ่าน Sheet A และ B อย่างเดียว แล้วรวมไว้ใน Sheet C ที่เว็บใช้ สถานะที่ครูกดบันทึกลง Sheet C เท่านั้น ไม่ย้อนไปแก้ A หรือ B</p>
+    <div id="adminWrap" style="display:flex;flex-direction:column;gap:4px">
+      <label for="setAdmin">รหัสผู้ดูแล</label>
+      <input id="setAdmin" type="password" autocomplete="current-password">
+    </div>
+
+    <section class="psec">
+      <h3>Sheet C · ฐานข้อมูลของเว็บ</h3>
+      <p class="hint" id="dbInfo">—</p>
+      <label for="setTab">แท็บที่เว็บแสดง</label>
+      <div class="inrow"><select id="setTab"></select><button class="btn" id="btnTab" type="button">ใช้แท็บนี้</button></div>
+    </section>
+
+    <section class="psec">
+      <h3>แหล่งข้อมูล (อ่านอย่างเดียว)</h3>
+      <label for="srcB">Sheet B · เลขที่ใบสมัคร ชื่อ วันที่ ชั้น สาขา หมายเหตุ</label>
+      <div class="inrow">
+        <input id="srcB" type="url" placeholder="https://docs.google.com/spreadsheets/d/…">
+        <button class="btn" id="btnPreview" type="button">ตรวจไฟล์</button>
+      </div>
+      <span class="lbl2">เลือกแท็บที่จะใช้</span>
+      <p class="hint" style="font-size:12.5px">① ใส่รหัสผู้ดูแล ② วางลิงก์ ระบบจะแสดงทุกแท็บในไฟล์ให้เอง ③ เลือกแท็บ เช่น มอบตัว 2/69 ④ กด "ดึงข้อมูลตอนนี้" เว็บจะเปลี่ยนไปใช้แท็บนั้นทันที</p>
+      <div class="tabpick" id="bTabs"><span class="hint">วางลิงก์ด้านบน แล้วรายชื่อแท็บจะขึ้นที่นี่</span></div>
+      <div class="syncbox" id="bPreview" hidden></div>
+      <details class="colmap" id="colMapBox">
+        <summary>กำหนดคอลัมน์เอง (ใช้เมื่อระบบหาคอลัมน์ผิด)</summary>
+        <p class="hint">ใส่ตัวอักษรคอลัมน์ใน Sheet B เช่น E · เว้นว่าง = ให้ระบบหาเอง</p>
+        <div class="cmgrid" id="colMap"></div>
+      </details>
+      <label for="srcA">Sheet A · Facebook / Line (จับคู่ด้วยชื่อ-นามสกุล · เว้นว่าง = ไม่ดึง)</label>
+      <div class="inrow">
+        <input id="srcA" type="url" placeholder="https://docs.google.com/spreadsheets/d/…">
+        <button class="btn" id="btnPreviewA" type="button">ตรวจไฟล์</button>
+      </div>
+      <span class="lbl2">แท็บที่ใช้หา Facebook / Line</span>
+      <p class="hint" style="font-size:12.5px">กด "ตรวจไฟล์" แล้วติ๊กแท็บที่ต้องการ ไม่ติ๊กเลย = ใช้ทุกแท็บที่มีคอลัมน์ FB./line (ถ้าชื่อซ้ำหลายแท็บ ใช้แท็บที่อยู่บนสุดก่อน)</p>
+      <div class="tabpick" id="aTabs"><span class="hint">ใช้ทุกแท็บที่มีคอลัมน์ FB./line · กด "ตรวจไฟล์" เพื่อเลือกเอง</span></div>
+    </section>
+
+    <section class="psec">
+      <h3>การดึงข้อมูล</h3>
+      <div class="syncbox" id="syncInfo">—</div>
+      <div class="inrow wrap" style="margin-top:6px">
+        <button class="btn primary" id="btnSyncNow" type="button">ดึงข้อมูลตอนนี้</button>
+        <button class="btn" id="btnAuto" type="button">เปิดดึงอัตโนมัติ</button>
+      </div>
+    </section>
+
+    <p class="msg" id="setMsg"></p>
+    <div class="pbtns">
+      <button class="btn" id="btnCancel" type="button">ปิด</button>
+    </div>
+  </aside>
+</div>
+
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <div class="mark" aria-hidden="true">มต</div>
+    <h2 style="font:600 20px/1.2 var(--f-display);margin:0">ใส่รหัสเข้าใช้งาน</h2>
+    <p class="hint">ขอรหัสจากผู้ดูแลระบบ</p>
+    <input id="pinInput" inputmode="numeric" autocomplete="off" aria-label="รหัสเข้าใช้งาน">
+    <p class="msg bad" id="gateMsg"></p>
+    <button class="btn primary" type="submit" style="justify-content:center">เข้าสู่ระบบ</button>
+  </form>
+</div>
+
+<div class="sheet" id="detail" hidden role="dialog" aria-modal="true" aria-labelledby="detailName">
+  <div class="shead">
+    <button class="btn" type="button" id="detailBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>กลับ</button>
+    <h2 id="detailName"></h2>
+  </div>
+  <div id="detailBody"></div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+var GAS = typeof google !== 'undefined' && google.script && google.script.run;
+// ลิงก์ Apps Script (/exec) สำหรับหน้าเว็บที่ฝากไว้นอก Google เช่น GitHub Pages · ใน Apps Script ไม่ต้องใส่
+var API_URL = 'https://script.google.com/macros/s/AKfycbzKwKUiBGY-EYwfmEz93mXKncHFKNfXM-pqChOZz6V2rcob8Q-IrI-D_PQm8ZbMgNbDOw/exec';
+var API = !GAS && /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(API_URL);
+var POLL_MS = 5000;
+var $ = function(s){ return document.querySelector(s); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+var store = {
+  get: function(k){ try { return localStorage.getItem('mobtua.' + k); } catch(e){ return null; } },
+  set: function(k, v){ try { localStorage.setItem('mobtua.' + k, v); } catch(e){} }
+};
+// ---------- ธีม: สว่าง / มืด (จำไว้ในเครื่องของแต่ละคน) ----------
+var THEME = { mode: store.get('theme') === 'dark' ? 'dark' : 'light' };
+function applyTheme(){
+  var dark = THEME.mode === 'dark';
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  var mt = document.querySelector('meta[name="theme-color"]');
+  if (mt) mt.setAttribute('content', dark ? '#10171B' : '#FFFFFF');
+  Array.prototype.forEach.call(document.querySelectorAll('#thModes [data-mode]'), function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === THEME.mode)); });
+}
+var S = { data:null, q:'', status:'all', fin:'all', room:null, major:'all', term:'', pending:{}, recent:{}, flash:{}, pin: store.get('pin') || '',
+          busy:false, timer:0, last:0, first:true, sig:'' };
+var DONE = 'เข้าแล้ว', NOT = 'ยังไม่เข้า', SKIP = 'ไม่ต้องเข้า';
+var VER = '2569-11-06b';   // ต้องตรงกับ APP_VERSION ใน Code.gs
+// ข้อความที่ผู้ใช้เห็น (ค่าที่บันทึกลงชีตยังเป็น "เข้าแล้ว" / "ยังไม่เข้า" เหมือนเดิม)
+var LBL = { done:'เข้ากลุ่ม Line แล้ว', not:'ยังไม่เข้ากลุ่ม Line', locked:'ไม่ต้องเข้า / ไม่นับ' };
+var SHORT = { done:'เข้ากลุ่ม Line แล้ว', not:'ยังไม่เข้ากลุ่ม Line' };
+var ICON_LOCK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+
+function call(fn){
+  var args = Array.prototype.slice.call(arguments, 1);
+  if (API) return apiCall(fn, args);
+  if (!GAS) return Demo[fn].apply(null, args);
+  return new Promise(function(res, rej){
+    var r = google.script.run.withSuccessHandler(res).withFailureHandler(function(e){ rej(new Error(friendly((e && e.message) || String(e)))); });
+    r[fn].apply(r, args);
+  });
+}
+
+// เรียก Apps Script จากหน้าเว็บภายนอก: ไม่ส่งคุกกี้ Google (credentials: omit) → ไม่ติดปัญหาล็อกอินหลายบัญชี
+function apiCall(fn, args){
+  return fetch(API_URL, {
+    method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args })
+  }).then(function(r){
+    if (!r.ok) throw new Error('status ' + r.status);
+    return r.text();
+  }, function(e){ throw new Error(friendly((e && e.message) || 'Failed to fetch')); }).then(function(t){
+    var j; try { j = JSON.parse(t); } catch(e){ throw new Error('ระบบตอบกลับไม่ถูกต้อง · ผู้ดูแล: ตรวจลิงก์ /exec และตั้ง "ผู้มีสิทธิ์เข้าถึง: ทุกคน" แล้วทำให้ใช้งานได้ → เวอร์ชันใหม่'); }
+    if (!j || !j.ok) throw new Error(friendly((j && j.error) || 'ระบบตอบกลับไม่ถูกต้อง'));
+    return j.data;
+  });
+}
+
+// แปลงข้อผิดพลาดทางเทคนิคเป็นข้อความที่ผู้ใช้เข้าใจและรู้ว่าต้องทำอะไรต่อ
+function friendly(msg){
+  msg = String(msg || '');
+  if (/NetworkError|network|Failed to fetch|disconnected|ERR_INTERNET|status 0/i.test(msg)) return 'เชื่อมต่ออินเทอร์เน็ตไม่ได้ ตรวจสัญญาณแล้วลองใหม่';
+  if (/timed out|timeout|exceeded maximum execution/i.test(msg)) return 'ระบบตอบช้าเกินไป กรุณาลองใหม่';
+  if (/too many times|quota|Too many|rate/i.test(msg)) return 'มีผู้ใช้งานพร้อมกันมากเกินไป รอสักครู่แล้วลองใหม่';
+  if (/authoriz|Authorization is required|ต้องได้รับอนุญาต|permission to call|ไม่มีสิทธิ์เรียก/i.test(msg)) return 'ระบบต้องได้รับอนุญาตใหม่ · ผู้ดูแล: เปิด Apps Script เลือกฟังก์ชัน setupSync แล้วกด "เรียกใช้" 1 ครั้ง จากนั้น Deploy → New version';
+  if (/Script function not found|ไม่พบฟังก์ชันของสคริปต์/i.test(msg)) return 'Code.gs ไม่ครบหรือเป็นเวอร์ชันเก่า · ผู้ดูแล: วาง Code.gs ล่าสุดให้ครบทั้งไฟล์ แล้ว Deploy → New version';
+  return msg;
+}
+
+// ---------- helpers ----------
+// สถานะที่หน้าเว็บใช้: done / not / locked
+function stateOf(x){
+  if (x.uncounted) return 'locked';
+  var v = String(x.status || '').trim();
+  if (/^ยังไม่(ได้)?เข้า/.test(v)) return 'not';
+  if (!v || v === NOT) return 'not';
+  if (v === DONE) return 'done';
+  return 'locked';
+}
+var gcls;
+// "ปวช.A" -> ภาคเรียนปกติ, "ปวส.B" -> ภาคเรียนพิเศษ
+function termOf(v){
+  var m = String(v || '').trim().match(/([AB])\s*$/i);
+  if (!m) return '';
+  return m[1].toUpperCase() === 'A' ? 'ภาคเรียนปกติ' : 'ภาคเรียนพิเศษ';
+}
+// "095-xxx / 084-xxx" -> [นักเรียน, ผู้ปกครอง]
+function phonesOf(v){
+  var p = String(v || '').split('/');
+  return { student: (p[0] || '').trim(), parent: p.slice(1).join('/').trim() };
+}
+function norm(s){ return String(s || '').toLowerCase().replace(/[\s\-\/]/g, ''); }
+function findRow(r){ var rs = S.data.rows; for (var i = 0; i < rs.length; i++) if (rs[i].r === r) return rs[i]; return null; }
+var FIELDS = ['app','applied','enrolled','name','phone','level','major','status','fb','line','fin'];
+
+// ---------- data ----------
+function applyData(d){
+  // Code.gs กับ Index.html คนละเวอร์ชัน (วางไฟล์ไม่ครบ / ยังไม่ Deploy เวอร์ชันใหม่)
+  $('#verWarn').hidden = !GAS || d.ver === VER;
+  if (d.statusDone) DONE = d.statusDone;
+  if (d.statusNot) NOT = d.statusNot;
+  if (d.statusSkip) SKIP = d.statusSkip;
+  // ค่าที่กำลังบันทึก หรือเพิ่งบันทึกไม่เกิน 8 วินาที ให้ยึดค่าบนหน้าเว็บไว้ก่อน
+  // (กันข้อมูลรอบเก่าที่ดึงมาก่อนบันทึกเสร็จ ทำให้สถานะเด้งกลับชั่วครู่)
+  var now = Date.now();
+  Object.keys(S.recent).forEach(function(k){ if (S.recent[k].until < now) delete S.recent[k]; });
+  d.rows.forEach(function(x){
+    var key = x.name + '|' + x.app;
+    if (key in S.pending) { x.status = S.pending[key]; x.locked = false; }
+    else if (S.recent[key]) { x.status = S.recent[key].value; x.locked = false; }
+  });
+  var sig = JSON.stringify([d.file, d.tab, d.rows]);
+  if (sig === S.sig) { S.data = d; return; }   // ชีตไม่มีอะไรเปลี่ยน ไม่ต้องวาดใหม่ (dropdown ที่เปิดอยู่จะไม่ปิดเอง)
+  if (S.data && !S.first) {
+    var prev = {}; S.data.rows.forEach(function(x){ prev[x.name + '|' + x.app] = x; });
+    d.rows.forEach(function(x){
+      var p = prev[x.name + '|' + x.app];
+      if (!p) { S.flash[x.r + ':row'] = Date.now(); return; }
+      FIELDS.forEach(function(f){ if (p[f] !== x[f] && !((x.name + '|' + x.app) in S.pending)) S.flash[x.r + ':' + f] = Date.now(); });
+    });
+  }
+  S.sig = sig; S.data = d; S.first = false;
+  $('#sub').textContent = d.file + ' · ' + d.tab;
+  renderAll();
+}
+
+function load(){
+  if (S.busy) return;
+  S.busy = true;
+  var t0 = Date.now();
+  call('getData', S.pin).then(function(d){
+    S.fresh = true; S.last = Date.now(); S.loadMs = Date.now() - t0; S.readMs = d.ms;
+    clearBootTimers(); setSync('ok'); applyData(d);
+  }).catch(function(e){
+    if (/รหัสเข้าใช้งาน/.test(e.message)) { clearBootTimers(); showGate(); return; }
+    if (/ต้องเปิดจากลิงก์ที่ได้รับ/.test(e.message)) {
+      clearBootTimers(); S.denied = true; setSync('err', 'ไม่มีสิทธิ์เข้าดู');
+      S.data = null; S.pin = ''; store.set('pin', '');
+      $('#home').hidden = true; $('#roomView').hidden = true; $('#boot').hidden = false;
+      $('#boot').innerHTML = '<div class="errbox"><b>หน้านี้เปิดได้เฉพาะจากลิงก์ที่ผู้ดูแลส่งให้</b><br>ลิงก์ที่ใช้อาจไม่ครบ หมดอายุ หรือถูกยกเลิกแล้ว · ขอลิงก์ใหม่จากผู้ดูแล แล้วเปิดจากลิงก์นั้นโดยตรง</div>';
+      return;
+    }
+    setSync('err', e.message);
+    if (!S.data) { clearBootTimers(); $('#boot').innerHTML = '<div class="errbox"><b>โหลดข้อมูลไม่สำเร็จ</b><br>' + esc(e.message) + '<br><button class="btn" type="button" onclick="location.reload()" style="margin-top:10px">ลองใหม่</button></div>'; }
+  }).then(function(){ S.busy = false; if (!$('#gate').hidden || S.denied) return; schedule(); });
+}
+function schedule(ms){
+  clearTimeout(S.timer);
+  S.timer = setTimeout(function(){ if (document.hidden) return schedule(); load(); }, ms == null ? POLL_MS : ms);
+}
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) schedule(200); });
+
+function setSync(kind, msg){ $('#sync').className = 'sync ' + kind; S.syncErr = kind === 'err' ? msg : ''; tickSync(); }
+function tickSync(){
+  var t = $('#syncText');
+  if (S.denied) { t.textContent = 'ไม่มีสิทธิ์เข้าดู'; $('#sync').title = 'เปิดจากลิงก์ที่ผู้ดูแลส่งให้'; $('#sub').textContent = 'ต้องเปิดจากลิงก์ที่ได้รับ'; return; }
+  if (S.syncErr) { t.textContent = 'เชื่อมต่อไม่ได้ · จะลองใหม่'; $('#sync').title = S.syncErr; return; }
+  if (!S.last) return;
+  if (!S.fresh) { $('#sync').classList.add('stale'); t.textContent = 'ข้อมูลที่จำไว้ · กำลังอัปเดต…'; $('#sync').title = 'แสดงข้อมูลชุดล่าสุดที่ระบบจำไว้ระหว่างรอข้อมูลสดจากชีต ยังเปลี่ยนสถานะไม่ได้จนกว่าจะอัปเดตเสร็จ'; return; }
+  var s = Math.round((Date.now() - S.last) / 1000);
+  var stale = s > 30;
+  $('#sync').classList.toggle('stale', stale);
+  t.textContent = s < 3 ? 'ข้อมูลล่าสุด' : (stale ? 'ข้อมูลอาจไม่ล่าสุด · ' + (s < 120 ? s + ' วิ' : Math.round(s / 60) + ' นาที') + 'ที่แล้ว' : 'ซิงก์เมื่อ ' + s + ' วิ ที่แล้ว');
+  $('#sync').title = 'ดึงข้อมูลจากชีตอัตโนมัติทุก ' + (POLL_MS / 1000) + ' วินาที' +
+    (S.loadMs ? ' · โหลดล่าสุดใช้ ' + (S.loadMs / 1000).toFixed(1) + ' วิ' + (S.readMs ? ' (อ่านชีต ' + (S.readMs / 1000).toFixed(1) + ' วิ)' : ' (ใช้ข้อมูลที่จำไว้)') : '');
+}
+setInterval(tickSync, 1000);
+
+// ---------- save (คอลัมน์ J เท่านั้น) ----------
+function findByKey(key){
+  var rs = S.data ? S.data.rows : [];
+  for (var i = 0; i < rs.length; i++) if (rs[i].name + '|' + rs[i].app === key) return rs[i];
+  return null;
+}
+// ห้องภาคเรียนปกติ (A): ครูแก้สถานะ "ไม่ต้องเข้า" / "ออกจากกลุ่มแล้ว" ได้ และเลือก "ไม่ต้องเข้า" ได้
+function isRoomA(level){ return /A$/i.test(String(level || '').replace(/\s+/g, '')); }
+function openA(x){ return !!(S.data && S.data.editLockedInA) && isRoomA(x.level); }
+function canEdit(x){ return !x.uncounted && !x.oddStatus && (!x.locked || openA(x)); }
+function save(r, value, isUndo){
+  var x = findRow(r); if (!x || !canEdit(x)) return;
+  if (value !== DONE && value !== NOT) return;
+  var old = x.status || NOT;
+  if (old === value) return;
+  var key = x.name + '|' + x.app;
+  if (key in S.pending) { renderAll(); return; }   // คนนี้กำลังบันทึกอยู่ รอให้เสร็จก่อน
+  if (!S.fresh) {
+    toast('กำลังอัปเดตข้อมูลล่าสุดจากชีต รอสักครู่แล้วค่อยเปลี่ยนสถานะ', true);
+    renderAll(); return;
+  }
+  if (S.last && Date.now() - S.last > 60000) {     // ข้อมูลบนจอเก่าเกิน 1 นาที: โหลดใหม่ก่อน กันแก้ทับค่าที่คนอื่นเพิ่งเปลี่ยน
+    toast('ข้อมูลบนจอเก่าเกินไป กำลังโหลดใหม่ ตรวจสถานะอีกครั้งแล้วค่อยเปลี่ยน', true);
+    renderAll(); schedule(0); return;
+  }
+  if (!navigator.onLine) {                         // ไม่มีเน็ต: ไม่บันทึก และคืนค่าเดิมบนจอ
+    toast('ไม่มีอินเทอร์เน็ต ยังเปลี่ยนสถานะไม่ได้ ลองใหม่เมื่อเชื่อมต่อแล้ว', true);
+    renderAll(); return;
+  }
+  x.status = value;
+  S.pending[key] = value;
+  renderAll();
+  var label = value === DONE ? LBL.done : (value === NOT ? LBL.not : value);
+  call('setStatus', S.pin, { row: r, name: x.name, app: x.app, value: value }).then(function(){
+    S.recent[key] = { value: value, until: Date.now() + 8000 };
+    toast((isUndo ? 'เลิกทำแล้ว · ' : 'บันทึกแล้ว · ') + x.name + ' → ' + label, false,
+      (isUndo || (old !== DONE && old !== NOT)) ? null : { label: 'เลิกทำ', fn: function(){ var y = findByKey(key); if (y) save(y.r, old, true); } });
+  }).catch(function(e){
+    x.status = old;
+    toast('บันทึกไม่สำเร็จ (' + x.name + '): ' + e.message, true,
+      { label: 'ลองใหม่', fn: function(){ var y = findByKey(key); if (y) save(y.r, value, isUndo); } });
+  }).then(function(){
+    delete S.pending[key]; S.sig = ''; renderAll(); schedule(600);
+  });
+}
+
+// ปิดหน้าเว็บระหว่างกำลังบันทึก → เตือนก่อน
+window.addEventListener('beforeunload', function(e){
+  if (Object.keys(S.pending).length) { e.preventDefault(); e.returnValue = ''; }
+});
+// แสดงแถบเตือนเมื่อไม่มีอินเทอร์เน็ต
+function netState(){ $('#offline').hidden = navigator.onLine !== false; }
+window.addEventListener('online', function(){ netState(); schedule(200); });
+window.addEventListener('offline', netState);
+
+// ---------- ห้อง ----------
+// กลุ่มพิเศษ (จากข้อความช่อง K): แยกออกจากห้องปกติ
+// เก็บเกรด: อยู่ในห้องของตัวเองตามปกติ (มีป้าย "เก็บเกรด" บนการ์ด) · เทียบโอน: แยกเป็นกลุ่มพิเศษ
+var SPECIAL_ROOMS = { '__transfer': 'เทียบโอน' };
+function isSpecial(k){ return k === '__transfer'; }
+function roomKey(x){ return x.kind === 'transfer' ? '__transfer' : (x.level || '__none'); }
+function roomLabel(k){ return k === '__all' ? 'ทุกห้อง' : (k === '__none' ? 'ไม่ระบุห้อง' : (SPECIAL_ROOMS[k] || k)); }
+function regularRows(){ return S.data.rows.filter(function(x){ return x.kind !== 'transfer'; }); }
+
+// ---------- เทอมของเก็บเกรด: "1/69" = เทอม 1 ปีการศึกษา 2569 ----------
+// อ่านจากข้อความช่อง K: หาเลขเทอม/ปี ที่อยู่หลังคำว่า "เก็บเกรด" ก่อน ถ้าไม่มีจึงหาจากทั้งข้อความ (ข้ามวันที่ เช่น 10/9/69)
+function parseTerm(text){
+  var t = String(text || '');
+  var re = /(?:^|[^\d\/])([12])\s*\/\s*(25\d{2}|\d{2})(?![\d\/])/;
+  var i = t.indexOf((S.data && S.data.special && S.data.special.grade) || 'เก็บเกรด');
+  var m = (i >= 0 && t.slice(i).match(re)) || t.match(re);
+  return m ? m[1] + '/' + m[2].slice(-2) : '';
+}
+function gradeTerm(x){ return parseTerm(x.note); }
+// แปลงสิ่งที่ผู้ใช้พิมพ์ในช่องเทอมให้เป็น "1/69" (รับได้หลายแบบ)
+function parseTermInput(v){
+  var s = String(v || '').replace(/[๐-๙]/g, function(d){ return String('๐๑๒๓๔๕๖๗๘๙'.indexOf(d)); })
+    .replace(/ปีการศึกษา|ภาคเรียน|ภาค|เทอม|ปี|ที่/g, ' ').trim();
+  var m = s.match(/^([12])\s*[\/\-.,\s]\s*(25\d{2}|\d{2})$/) || s.match(/^([12])(25\d{2}|\d{2})$/);
+  return m ? m[1] + '/' + m[2].slice(-2) : '';
+}
+function validTerm(t){ return /^[12]\/\d{2}$/.test(t || ''); }
+function termLabel(t){ var p = t.split('/'); return 'เทอม ' + p[0] + ' ปีการศึกษา 25' + p[1]; }
+function roomList(){
+  var ks = [];
+  regularRows().forEach(function(x){ var k = roomKey(x); if (ks.indexOf(k) < 0) ks.push(k); });
+  return ks.sort(function(a, b){
+    if (a === '__none') return 1; if (b === '__none') return -1;
+    return a.localeCompare(b, 'th', { numeric: true });
+  });
+}
+function roomRows(k){
+  return S.data.rows.filter(function(x){ return k === '__all' || roomKey(x) === k; });
+}
+function counts(list){
+  var c = { total: list.length, done:0, not:0, locked:0 };
+  list.forEach(function(x){ c[stateOf(x)]++; });
+  return c;
+}
+// ห้องสีตามระดับ + ภาค: ปวช. A/B, ปวส. A/B (สีเดียวกับในชีต)
+gcls = function(v){
+  var s = String(v || '').replace(/\s/g, '');
+  if (!s) return 'g0';
+  var t = (s.match(/([AB])$/i) || [])[1];
+  var lv = /ปวส/.test(s) ? 'ส' : (/ปวช/.test(s) ? 'ช' : '');
+  if (lv && t) return { 'ชA':'gA', 'ชB':'gB', 'สA':'gC', 'สB':'gD' }[lv + t.toUpperCase()];
+  var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return ['gA','gB','gC','gD'][h % 4];
+};
+
+// ---------- สาขา (คอลัมน์ I) ภายในห้อง ----------
+function majorKey(x){ return x.major || '__none'; }
+function majorLabel(m){ return m === '__none' ? 'ยังไม่ระบุสาขา' : m; }
+function majorList(rows){
+  var ms = [];
+  rows.forEach(function(x){ var m = majorKey(x); if (ms.indexOf(m) < 0) ms.push(m); });
+  return ms.sort(function(a, b){
+    if (a === '__none') return 1; if (b === '__none') return -1;
+    return a.localeCompare(b, 'th', { numeric: true });
+  });
+}
+// เลขห้องของสาขา (ตั้งใน Code.gs → MAJOR_NO) เช่น การบัญชี = 1
+function majorNo(m){
+  var t = (S.data && S.data.majorNo) || [];
+  for (var i = 0; i < t.length; i++) if (String(m).indexOf(t[i][0]) >= 0) return t[i][1];
+  return null;
+}
+// "ปวส.A" + การบัญชี → "ปวส. 1/1" (ถ้าห้องไม่ระบุชั้นปี ใช้ปี 1)
+function classCode(room, m){
+  var n = majorNo(m), s = String(room || '');
+  if (!n || !s || s === '__all') return '';
+  var lv = /ปวส/.test(s) ? 'ปวส.' : (/ปวช/.test(s) ? 'ปวช.' : '');
+  if (!lv) return '';
+  var y = (s.match(/ปว[ชส]\.?\s*(\d)/) || [])[1] || '1';
+  return lv + ' ' + y + '/' + n;
+}
+function majorText(m){ var c = classCode(S.room, m); return majorLabel(m) + (c ? ' ' + c : ''); }
+
+// ระดับของห้อง: ปวช / ปวส (ใช้หาสาขาที่ควรมีในห้อง)
+function levelKey(room){ var s = String(room || ''); return /ปวส/.test(s) ? 'ปวส' : (/ปวช/.test(s) ? 'ปวช' : s); }
+// สาขาทั้งหมดของห้อง = สาขาที่ตั้งไว้ใน Code.gs (MAJORS) + สาขาที่มีนักเรียนในห้องระดับเดียวกัน
+// ระดับนี้แยกตามสาขาไหม (ตั้งใน Code.gs → SPLIT_BY_MAJOR) ถ้าไม่ได้ตั้งไว้ถือว่าแยก
+function splitsByMajor(k){
+  var cfg = (S.data && S.data.splitByMajor) || {};
+  if (!k || k === '__all' || isSpecial(k)) return false;
+  var v = cfg[levelKey(k)];
+  return v === undefined ? true : !!v;
+}
+function majorsForRoom(k, roomAll){
+  if (!splitsByMajor(k)) return [];
+  var lv = k === '__all' ? null : levelKey(k);
+  var cfg = (S.data && S.data.majors) || {};
+  var list = [];
+  var add = function(m){ m = String(m || '').trim(); if (m && list.indexOf(m) < 0) list.push(m); };
+  if (lv === null) { Object.keys(cfg).forEach(function(l){ (cfg[l] || []).forEach(add); }); }
+  else (cfg[lv] || []).forEach(add);
+  S.data.rows.forEach(function(x){ if (x.major && (lv === null || levelKey(x.level) === lv)) add(x.major); });
+  list.sort(function(a, b){
+    var na = majorNo(a), nb = majorNo(b);
+    if (na !== nb) return (na == null ? 99 : na) - (nb == null ? 99 : nb);
+    return a.localeCompare(b, 'th', { numeric: true });
+  });
+  if (roomAll.some(function(x){ return !x.major; })) list.push('__none');
+  return list;
+}
+
+// นักเรียนของห้องที่เลือก + สาขาที่เลือก (ทุกตัวเลข / ตัวกรอง / รายชื่อ ใช้ชุดนี้)
+function scopeRows(){
+  return roomRows(S.room).filter(function(x){
+    if (S.room === '__grade' && S.term) return gradeTerm(x) === S.term;
+    return S.major === 'all' || majorKey(x) === S.major;
+  });
+}
+function syncUrl(){ navReplace(); }
+// how: 'push' = เพิ่มประวัติ (ย้อนกลับได้), 'replace' = แทนที่ขั้นปัจจุบัน, 'none' = มาจากปุ่มย้อนกลับ
+function goMajor(m, how){
+  var prev = S.major;
+  S.major = m; S.status = 'all';
+  store.set('major', m === 'all' ? '' : m);
+  if (how !== 'none') { if ((how || (prev === 'all' && m !== 'all' ? 'push' : 'replace')) === 'push') navPush(); else navReplace(); }
+  renderRoom();
+}
+
+function goRoom(k, how){
+  S.room = k; S.major = 'all'; S.term = ''; $('#termIn').value = ''; S.status = 'all'; S.fin = 'all'; S.q = ''; $('#q').value = '';
+  store.set('room', k || ''); store.set('major', '');
+  if (how !== 'none') { if ((how || (k ? 'push' : 'replace')) === 'push') navPush(); else navReplace(); }
+  renderAll();
+  window.scrollTo(0, 0);
+}
+
+// ---------- render ----------
+function renderAll(){
+  if (!S.data) return;
+  $('#boot').hidden = true;
+  if (S.room && S.room !== '__all' && !isSpecial(S.room) && roomList().indexOf(S.room) < 0) S.room = null; // ห้องนี้ไม่มีในชีตแล้ว
+  document.body.classList.toggle('inroom', !!S.room);   // ในหน้าห้อง: หัวเว็บไม่ต้องติดด้านบน (ให้แถบห้อง/ค้นหาติดแทน)
+  if (!S.room) { $('#roomView').hidden = true; $('#home').hidden = false; renderHome(); }
+  else { $('#home').hidden = true; $('#roomView').hidden = false; renderRoom(); }
+}
+
+function renderHome(){
+  var all = counts(regularRows()), rooms = roomList();
+  $('#homeSum').textContent = rooms.length + ' ห้อง · นักเรียน ' + all.total + ' คน · ' + SHORT.done + ' ' + all.done + ' · ' + SHORT.not + ' ' + all.not;
+  $('#rooms').innerHTML = rooms.map(function(k){
+    var c = counts(roomRows(k)), need = c.total - c.locked;
+    return '<button class="tile" type="button" data-goroom="' + esc(k) + '">' +
+      '<div class="t-top"><span class="gchip ' + gcls(k === '__none' ? '' : k) + '">' + esc(termOf(k) || 'ห้อง') + '</span><span>' + c.total + ' คน</span></div>' +
+      '<div class="rn">' + esc(roomLabel(k)) + '</div>' +
+      (need ? '<div class="rc"><span class="c-done">' + SHORT.done + ' <b>' + c.done + '</b></span><span class="c-not">' + SHORT.not + ' <b>' + c.not + '</b></span></div>'
+            : '<div class="rc"><span class="c-off">ไม่มีนักเรียนที่ต้องเข้ากลุ่ม Line</span></div>') +
+      '<div class="bar"><i style="width:' + (need ? Math.round(c.done / need * 100) : 0) + '%"></i></div></button>';
+  }).join('');
+  // กลุ่มพิเศษ: เก็บเกรด / เทียบโอน
+  $('#specialRooms').innerHTML = ['__transfer'].map(function(k){
+    var rs = roomRows(k), c = counts(rs), need = c.total - c.locked;
+    var extra = '';
+    if (k === '__grade') {
+      var terms = []; rs.forEach(function(x){ var t = gradeTerm(x); if (t && terms.indexOf(t) < 0) terms.push(t); });
+      extra = terms.length ? terms.length + ' เทอม' : '';
+    }
+    return '<button class="tile special" type="button" data-goroom="' + k + '">' +
+      '<div class="t-top"><span class="gchip gS">กลุ่มพิเศษ</span><span>' + c.total + ' คน' + (extra ? ' · ' + extra : '') + '</span></div>' +
+      '<div class="rn">' + roomLabel(k) + '</div>' +
+      '<div class="rc"><span class="c-done">' + SHORT.done + ' <b>' + c.done + '</b></span><span class="c-not">' + SHORT.not + ' <b>' + c.not + '</b></span></div>' +
+      '<div class="bar"><i style="width:' + (need ? Math.round(c.done / need * 100) : 0) + '%"></i></div></button>';
+  }).join('');
+}
+
+function renderRoom(){
+  var k = S.room, roomAll = roomRows(k);
+  var majors = majorsForRoom(k, roomAll);
+  if (S.major !== 'all' && majors.indexOf(S.major) < 0) S.major = 'all';   // ห้องที่ไม่แยกสาขา หรือสาขานี้ไม่มีแล้ว   // สาขานี้ไม่มีในห้องแล้ว
+  var rows = scopeRows(), c = counts(rows), need = c.total - c.locked;
+  // ปุ่มเลือกสาขา (แสดงเมื่อห้องนี้มีมากกว่า 1 สาขา)
+  var mbox = $('#majors');
+  // ห้องที่มีหลายสาขา: ต้องเลือกสาขาก่อน แล้วค่อยแสดงตัวเลขและรายชื่อ
+  var needPick = majors.length > 1 && S.major === 'all';
+  $('#roomView').classList.toggle('needpick', needPick);
+  $('#roomView').classList.toggle('noscope', !needPick && rows.length === 0);
+  if (majors.length > 1) {
+    mbox.hidden = false;
+    mbox.innerHTML = majors.map(function(m){
+      return '<button type="button" class="mchip" data-major="' + esc(m) + '" aria-pressed="' + (S.major === m) + '">' + esc(majorLabel(m)) + '</button>';
+    }).join('') + (needPick ? '<p class="pickhint">กดเลือกสาขาเพื่อดูจำนวนและรายชื่อนักเรียน</p>' : '');
+  } else { mbox.hidden = true; mbox.innerHTML = ''; $('#roomView').classList.remove('needpick'); }
+  // เตือนข้อมูลในชีตที่ทำให้นับผิด: ไม่ระบุสาขา / สาขาเลขเดียวกันแต่สะกดคนละแบบ
+  var warns = [];
+  var noMajor = roomAll.filter(function(x){ return !x.major; }).length;
+  if (noMajor && splitsByMajor(k)) warns.push('มีนักเรียน ' + noMajor + ' คนยังไม่ระบุสาขาใน Sheet B จึงไม่อยู่ในสาขาใด');
+  var odd = roomAll.filter(function(x){ return x.oddStatus && !x.uncounted; });
+  if (odd.length) warns.push('ช่องสถานะ (แท็บ สถานะการเข้ากลุ่ม Line ใน Sheet C) ของ ' + odd.map(function(x){ return x.name; }).slice(0, 3).join(', ') + (odd.length > 3 ? ' และอีก ' + (odd.length - 3) + ' คน' : '') + ' มีข้อความที่ไม่ใช่สถานะ');
+  var byNo = {};
+  majors.forEach(function(m){ var n = majorNo(m); if (n) (byNo[n] = byNo[n] || []).push(m); });
+  Object.keys(byNo).forEach(function(n){
+    if (byNo[n].length > 1) warns.push('ชื่อสาขาสะกดต่างกัน: "' + byNo[n].join('" กับ "') + '" ระบบนับแยกเป็นคนละสาขา ควรแก้ใน Sheet B ให้เหมือนกัน');
+  });
+  // ช่อง K มีทั้ง "เก็บเกรด" และ "เทียบโอน" → ไม่แน่ใจว่าอยู่กลุ่มไหน
+  var both = roomAll.filter(function(x){ return x.bothKinds; });
+  if (both.length) warns.push('หมายเหตุใน Sheet B ของ ' + both.map(function(x){ return x.name; }).slice(0, 3).join(', ') + ' มีทั้งคำว่า "เก็บเกรด" และ "เทียบโอน" ระบบจัดไว้ที่เก็บเกรดก่อน ควรแก้ให้เหลือคำเดียว');
+  $('#dq').hidden = !warns.length;
+  $('#dq').innerHTML = warns.map(function(w){ return '<div>⚠ ' + esc(w) + ' · แจ้งผู้ดูแลระบบ</div>'; }).join('');
+  renderTermBox();
+  // นักเรียนห้องนี้ (คอลัมน์ H) ที่ย้ายไปกลุ่มพิเศษ → บอกครู พร้อมปุ่มไปดู
+  var moved = $('#moved');
+  if (!isSpecial(k) && k !== '__all') {
+    var g = 0;
+    var tr = S.data.rows.filter(function(x){ return x.kind === 'transfer' && (x.level || '__none') === k; }).length;
+    moved.hidden = !(g || tr);
+    moved.innerHTML = (g || tr) ? '<span>นักเรียนห้องนี้อีก ' + (g + tr) + ' คนแยกไปอยู่กลุ่มพิเศษ ไม่นับรวมในห้องนี้:</span>' +
+      (tr ? '<button type="button" class="btn" data-goroom="__transfer">เทียบโอน ' + tr + ' คน</button>' : '') : '';
+  } else { moved.hidden = true; moved.innerHTML = ''; }
+  // เมนูเปลี่ยนห้อง
+  $('#roomSel').innerHTML = ['__all'].concat(roomList(), ['__transfer']).map(function(r){
+    var rc = counts(roomRows(r));
+    return '<option value="' + esc(r) + '"' + (r === k ? ' selected' : '') + '>' + esc(roomLabel(r)) + '  (' + SHORT.done + ' ' + rc.done + '/' + (rc.total - rc.locked) + ')</option>';
+  }).join('');
+  var code = S.major !== 'all' ? classCode(k, S.major) : '';
+  $('#roomEyebrow').textContent = isSpecial(k) ? 'กลุ่มพิเศษ (แยกจากห้องปกติ)' : S.major !== 'all'
+    ? 'ห้อง ' + roomLabel(k) + (code ? ' · สาขา' + majorLabel(S.major).replace(/^สาขา/, '') : '')
+    : 'ห้อง';
+  $('#roomName').textContent = code || (S.major !== 'all' ? majorLabel(S.major) : roomLabel(k));
+  $('#roomTerm').textContent = (k === '__all' ? 'รวมทุกห้อง · ' : (k === '__grade' && validTerm(S.term) ? termLabel(S.term) + ' · ' : (isSpecial(k) ? '' : (termOf(k) ? termOf(k) + ' · ' : '')))) +
+    'นักเรียน ' + c.total + ' คน' +
+    (needPick ? ' · ' + majors.length + ' สาขา' : '');
+  // ตัวเลขใหญ่: กดเพื่อกรอง
+  var tiles = [['done', LBL.done, c.done], ['not', LBL.not, c.not]];
+  $('#stats').innerHTML = tiles.map(function(t){
+    return '<button type="button" class="st-tile ' + (t[0] === 'locked' ? 'off' : t[0]) + '" data-status="' + t[0] + '" aria-pressed="' + (S.status === t[0]) + '">' +
+      '<span class="lbl">' + esc(t[1]) + '</span><span class="num">' + t[2] + '<small>คน</small></span></button>';
+  }).join('');
+  var pct = need ? Math.round(c.done / need * 100) : 0;
+  $('#roomProg').innerHTML = '<span>' + SHORT.done + ' ' + c.done + ' จาก ' + need + ' คน</span><div class="bar"><i style="width:' + pct + '%"></i></div><span>' + pct + '%</span>';
+  $('#q').placeholder = isSpecial(k) ? 'ค้นหาชื่อ เลขที่ใบสมัคร เบอร์โทร หรือรายละเอียด' : 'ค้นหาชื่อ เลขที่ใบสมัคร เบอร์โทร หรือสาขา';
+  renderFilters(); renderList();
+}
+
+// กล่องพิมพ์เทอม (เฉพาะหน้าเก็บเกรด) — วาดเฉพาะปุ่ม ไม่วาดช่องพิมพ์ใหม่ เพื่อไม่ให้หลุดโฟกัสระหว่างพิมพ์
+function renderTermBox(){
+  var box = $('#termBox');
+  if (S.room !== '__grade') { box.hidden = true; return; }
+  box.hidden = false;
+  var all = roomRows('__grade'), terms = [];
+  all.forEach(function(x){ var t = gradeTerm(x); if (t && terms.indexOf(t) < 0) terms.push(t); });
+  terms.sort(function(a, b){ var pa = a.split('/'), pb = b.split('/'); return (pb[1] - pa[1]) || (pa[0] - pb[0]); });  // ปีล่าสุดก่อน
+  var cnt = function(t){ return all.filter(function(x){ return gradeTerm(x) === t; }).length; };
+  $('#termChips').innerHTML = '<button type="button" class="mchip" data-term="" aria-pressed="' + (!S.term) + '">ทุกเทอม<span class="mc">' + all.length + '</span></button>' +
+    terms.map(function(t){ return '<button type="button" class="mchip" data-term="' + t + '" aria-pressed="' + (S.term === t) + '">' + t + '<span class="mc">' + cnt(t) + '</span></button>'; }).join('');
+  var raw = $('#termIn').value.trim(), noTerm = all.filter(function(x){ return !gradeTerm(x); });
+  var hint = '';
+  if (raw && !parseTermInput(raw)) {
+    hint = /^[3-9]/.test(raw.replace(/\D/g, '')) ? 'เทอมมีแค่ 1 กับ 2 เช่น 1/69 หรือ 2/68'
+      : 'พิมพ์แบบ เทอม/ปี เช่น 1/69, 1-69 หรือ 2/2568';
+  } else if (validTerm(S.term) && !cnt(S.term)) {
+    hint = 'ไม่มีนักเรียนเก็บเกรด' + termLabel(S.term) + (terms.length ? ' · เทอมที่มีข้อมูล: ' + terms.join(', ') : '');
+  } else if (validTerm(S.term)) {
+    hint = termLabel(S.term);
+  } else if (noTerm.length) {
+    hint = 'มี ' + noTerm.length + ' คนที่ยังไม่ได้ระบุเทอมในหมายเหตุของ Sheet B (' + noTerm.slice(0, 3).map(function(x){ return x.name; }).join(', ') +
+      (noTerm.length > 3 ? ' ฯลฯ' : '') + ') จะแสดงเฉพาะตอนเลือก "ทุกเทอม" · แจ้งผู้ดูแลให้เติม เช่น "เก็บเกรด 1/69"';
+  }
+  $('#termHint').textContent = hint;
+}
+function setTerm(t, fromInput){
+  S.term = t; S.status = 'all';
+  if (!fromInput) $('#termIn').value = t;
+  syncUrl(); renderRoom();
+}
+
+function renderFilters(){
+  renderFinFilter();
+  var c = counts(scopeRows());
+  // "ไม่ต้องเข้า / ไม่นับ" ไม่แสดงจำนวน (ยังกดดูรายชื่อได้)
+  var items = [['all','ทั้งหมด', c.total],['not', SHORT.not, c.not],['done', SHORT.done, c.done]];
+  if (S.status === 'locked') S.status = 'all';
+  $('#statusFilter').innerHTML = items.map(function(it){
+    return '<button type="button" data-status="' + it[0] + '" aria-pressed="' + (S.status === it[0]) + '">' + esc(it[1]) + (it[2] === null ? '' : '<span class="n">' + it[2] + '</span>') + '</button>';
+  }).join('');
+}
+
+// ---------- กรองตามโปร / ประเภทการเงิน ----------
+// ค่าตัวกรอง: 'all' | '__promo' (โปรทุกแบบ) | '__none' (ไม่มีข้อมูลการเงิน) | ประเภท เช่น "โปร 999", "กยศ."
+function finMatch(x, f){
+  if (!f || f === 'all') return true;
+  if (f === '__none') return !x.ftype;
+  if (f === '__promo') return /^โปร/.test(x.ftype || '');
+  return x.ftype === f;
+}
+function renderFinFilter(){
+  var sel = $('#finSel'); if (!sel) return;
+  var rows = scopeRows(), cnt = {}, none = 0, promo = 0;
+  rows.forEach(function(x){ if (!x.ftype) { none++; return; } cnt[x.ftype] = (cnt[x.ftype] || 0) + 1; if (/^โปร/.test(x.ftype)) promo++; });
+  var types = Object.keys(cnt).sort(function(a, b){
+    var pa = /^โปร/.test(a), pb = /^โปร/.test(b);
+    if (pa !== pb) return pa ? -1 : 1;
+    if (pa) return Number(a.replace(/\D/g, '')) - Number(b.replace(/\D/g, ''));
+    return cnt[b] - cnt[a];
+  });
+  if (S.fin !== 'all' && !(S.fin === '__none' && none) && !cnt[S.fin]) S.fin = 'all';
+  var opt = function(v, t, n){ return '<option value="' + esc(v) + '"' + (S.fin === v ? ' selected' : '') + '>' + esc(t) + (n != null ? ' (' + n + ')' : '') + '</option>'; };
+  sel.innerHTML = opt('all', '💰 โปร / การเงิน: ทั้งหมด') +
+    types.map(function(t){ return opt(t, t, cnt[t]); }).join('') +
+    (none ? opt('__none', 'ไม่มีข้อมูลการเงิน', none) : '');
+  sel.classList.toggle('on', S.fin !== 'all');
+  sel.hidden = !types.length;   // ยังไม่มีข้อมูลการเงินเลย (ยังไม่ได้ดึงข้อมูลรอบใหม่) → ซ่อนตัวกรอง
+}
+$('#finSel').addEventListener('change', function(e){ S.fin = e.target.value; renderList(); renderFinFilter(); });
+$('#list').addEventListener('click', function(e){
+  if (!e.target.closest('[data-clearf]')) return;
+  S.status = 'all'; S.fin = 'all'; renderRoom();
+});
+
+function visibleRows(){
+  var q = norm(S.q);
+  return scopeRows().filter(function(x){
+    if (S.status !== 'all' && stateOf(x) !== S.status) return false;
+    if (!finMatch(x, S.fin)) return false;
+    if (q) return norm([x.name, x.app, x.phone, x.major, x.level, x.note, x.fb, x.line, x.ftype, x.fin, x.fnote].join('|')).indexOf(q) >= 0;
+    return true;
+  });
+}
+function fl(r, f){
+  var t = S.flash[r + ':' + f];
+  return t && Date.now() - t < 2600 ? ' flash' : '';
+}
+function kv(label, value, r, f){
+  return '<div><dt>' + label + '</dt><dd class="' + (value ? '' : 'none') + fl(r, f) + '">' + (value ? esc(value) : '—') + '</dd></div>';
+}
+
+// Facebook / Line: กดแล้วเปิดค้นหาใน Facebook / เพิ่มเพื่อนใน Line (ถ้าเป็นไอดี)
+function fbHref(v){ return 'https://www.facebook.com/search/top?q=' + encodeURIComponent(v); }
+function lineHref(v){
+  v = String(v || '').trim();
+  if (!/^@?[A-Za-z0-9._-]{2,}$/.test(v)) return '';
+  return 'https://line.me/R/ti/p/' + (v.charAt(0) === '@' ? encodeURIComponent(v) : '~' + encodeURIComponent(v));
+}
+function linkKV(label, value, href, r, f){
+  if (!value) return kv(label, '', r, f);
+  return '<div><dt>' + label + '</dt><dd class="txt' + fl(r, f) + '">' +
+    (href ? '<a class="clink" href="' + esc(href) + '" target="_blank" rel="noopener" title="เปิดใน ' + label + '">' + esc(value) + '</a>' : esc(value)) + '</dd></div>';
+}
+
+function statusHTML(x){
+  var st = stateOf(x);
+  var head = '<span class="sthead">สถานะการเข้ากลุ่ม Line</span>';
+  if (st === 'locked' && !canEdit(x)) {
+    var badge, hint;
+    if (x.uncounted) {
+      badge = 'ไม่นับ' + (x.status ? ' · ' + x.status : '');
+      hint = 'ใน Sheet B ตั้งว่า "ไม่นับ" ไว้ที่ช่องห้อง จึงไม่นับรวมในยอด และแก้จากเว็บไม่ได้';
+    } else if (x.oddStatus) {
+      badge = 'ข้อมูลช่องสถานะไม่ถูกต้อง';
+      hint = 'ช่องสถานะใน Sheet C มีข้อความอื่น ("' + (x.status.length > 40 ? x.status.slice(0, 40) + '…' : x.status) + '") แจ้งผู้ดูแลให้แก้เป็น เข้าแล้ว / ยังไม่เข้า';
+    } else {
+      badge = x.status;
+      hint = 'ตั้งไว้ในแท็บ "สถานะการเข้ากลุ่ม Line" ของ Sheet C แก้จากเว็บไม่ได้ ติดต่อผู้ดูแลถ้าต้องการเปลี่ยน';
+    }
+    return '<div class="stat">' + head + '<div class="locked' + (x.oddStatus && !x.uncounted ? ' odd' : '') + fl(x.r, 'status') + '">' + ICON_LOCK + '<span class="ltxt">' + esc(badge) + '</span></div>' +
+      '<span class="lockhint">' + esc(hint) + '</span></div>';
+  }
+  var cur = st === 'done' ? DONE : (st === 'not' ? NOT : x.status);
+  var saving = ((x.name + '|' + x.app) in S.pending);
+  // เลือกได้แค่ เข้าแล้ว / ยังไม่เข้า · ห้อง A ที่ตั้ง "ไม่ต้องเข้า" ไว้ในชีต: แสดงค่าปัจจุบันไว้ (เลือกกลับไม่ได้) และเปลี่ยนเป็น 2 ค่านี้ได้
+  var extra = (st === 'locked') ? '<option value="' + esc(cur) + '" selected disabled>— ' + esc(cur) + '</option>' : '';
+  return '<div class="stat">' + head +
+    '<select class="pick st-' + st + (saving ? ' saving' : '') + fl(x.r, 'status') + '" data-r="' + x.r + '" aria-label="สถานะการเข้ากลุ่ม Line ของ ' + esc(x.name) + '">' +
+    '<option value="' + esc(NOT) + '"' + (cur === NOT ? ' selected' : '') + '>✗ ' + LBL.not + '</option>' +
+    '<option value="' + esc(DONE) + '"' + (cur === DONE ? ' selected' : '') + '>✓ ' + LBL.done + '</option>' + extra +
+    '</select>' + (saving ? '<span class="lockhint">กำลังบันทึก…</span>' : '') + '</div>';
+}
+
+// หมายเหตุบนการ์ด: ตัดชื่อกลุ่มที่ซ้ำกับป้ายออก ("เก็บเกรด 2/69 · 1/3/69 มอบตัว…" → "1/3/69 มอบตัว…")
+function noteText(x){
+  var t = String(x.note || '');
+  var m = t.match(/^(เก็บ\s*เกรด|เทียบโอน)[^·]*·\s*/);
+  return m ? t.slice(m[0].length) : t;
+}
+// สีป้ายการเงินตามสีช่องในตาราง — ส่งสีไปเป็น --fc แล้วให้ CSS ผสมให้อ่อนลงตามธีม (ดู [data-tc] / --chip-strength)
+function tableColorStyle(c){
+  c = String(c || '').toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(c)) return '';
+  return ' data-tc style="--fc:' + c + '"';
+}
+function isSpecial(x){ return x.ftype === 'กรณีพิเศษ'; }
+function specialNoteHTML(x){
+  return isSpecial(x) ? '<div class="note"><span class="ntag nsp"' + tableColorStyle(x.fcolor) + '>กรณีพิเศษ</span><span class="ntext">' +
+    (x.fnote ? esc(x.fnote) : '<span style="color:var(--faint)">ไม่มีหมายเหตุ</span>') + '</span></div>' : '';
+}
+function rowHTML(x){
+  var ph = phonesOf(x.phone);
+  return '<article class="row s-' + stateOf(x) + fl(x.r, 'row') + '" data-r="' + x.r + '">' +
+    '<div class="who"><div class="name' + fl(x.r, 'name') + '">' + esc(x.name) + '</div>' +
+      '<div class="meta">เลขที่ใบสมัคร <span class="mono' + fl(x.r, 'app') + '">' + (esc(x.app) || '—') + '</span></div></div>' +
+    '<dl class="kv dates">' + kv('กรอกใบสมัคร', x.applied, x.r, 'applied') + kv('มอบตัว', x.enrolled, x.r, 'enrolled') + '</dl>' +
+    '<dl class="kv phones">' + kv('นักเรียน', ph.student, x.r, 'phone') + kv('ผู้ปกครอง', ph.parent, x.r, 'phone') +
+      linkKV('Facebook', x.fb, x.fb ? fbHref(x.fb) : '', x.r, 'fb') + linkKV('Line', x.line, lineHref(x.line), x.r, 'line') + '</dl>' +
+    '<div class="study"><div class="lv">' +
+      (x.level ? '<span class="gchip ' + gcls(x.level) + fl(x.r, 'level') + '">' + esc(x.level) + '</span>' : '<span class="gchip g0">ไม่ระบุห้อง</span>') +
+      (termOf(x.level) ? '<span class="term">' + termOf(x.level) + '</span>' : '') + '</div>' +
+      '<div class="major' + fl(x.r, 'major') + '">' + (esc(x.major) || '<span style="color:var(--faint)">ไม่ระบุสาขา</span>') + '</div></div>' +
+    statusHTML(x) +
+    (x.fin ? '<div class="fin' + fl(x.r, 'fin') + '"><span class="ftag"' + tableColorStyle(x.fcolor) + '>💰 การเงิน · ' + esc(x.ftype) + '</span><span class="ftext">' + esc(x.fin) + '</span></div>' : '') +
+    (x.kind === 'grade'
+      ? '<div class="note"><span class="ntag">เก็บเกรด' + (gradeTerm(x) ? ' ' + gradeTerm(x) : '') + '</span><span class="ntext">' + esc(noteText(x)) + '</span></div>'
+      : (x.kind === 'transfer' ? '<div class="note"><span class="ntag">เทียบโอน</span><span class="ntext">' + esc(noteText(x)) + '</span></div>' : '')) +
+    specialNoteHTML(x) +
+    '</article>';
+}
+
+// ---------- มือถือ: รายชื่อแบบย่อ + หน้ารายละเอียด ----------
+var COMPACT_MQ = window.matchMedia ? window.matchMedia('(max-width: 720px)') : { matches: false };
+function isCompact(){ return true; }   // ทุกขนาดจอใช้รายชื่อแบบย่อ + หน้ารายละเอียด (เหมือนมือถือ)
+function keyOf(x){ return x.name + '|' + x.app; }
+function itemHTML(x){ return isCompact() ? compactHTML(x) : rowHTML(x); }
+// สถานะแบบย่อในแถว (ยังกดเปลี่ยนได้จากแถวเลย ไม่ต้องเปิดหน้ารายละเอียด)
+function cstatHTML(x){
+  var st = stateOf(x);
+  if (st === 'locked' && !canEdit(x)) return '<div class="locked">' + ICON_LOCK + '<span class="ltxt">' + esc(x.uncounted ? 'ไม่นับ' : (x.oddStatus ? 'ตรวจสถานะ' : x.status)) + '</span></div>';
+  var cur = st === 'done' ? DONE : (st === 'not' ? NOT : x.status);
+  var saving = (keyOf(x) in S.pending);
+  return '<select class="pick st-' + st + (saving ? ' saving' : '') + fl(x.r, 'status') + '" data-r="' + x.r + '" aria-label="สถานะการเข้ากลุ่ม Line ของ ' + esc(x.name) + '">' +
+    '<option value="' + esc(NOT) + '"' + (cur === NOT ? ' selected' : '') + '>✗ ยังไม่เข้า</option>' +
+    '<option value="' + esc(DONE) + '"' + (cur === DONE ? ' selected' : '') + '>✓ เข้าแล้ว</option>' +
+    (st === 'locked' ? '<option value="' + esc(cur) + '" selected disabled>— ' + esc(cur) + '</option>' : '') + '</select>';
+}
+function compactHTML(x){
+  return '<article class="crow s-' + stateOf(x) + fl(x.r, 'row') + '" data-open="' + esc(keyOf(x)) + '" tabindex="0" aria-label="ดูรายละเอียดของ ' + esc(x.name) + '">' +
+    '<div class="cmain"><div class="name' + fl(x.r, 'name') + '">' + esc(x.name) + '</div>' +
+      '<div class="csub">' + (x.level ? '<span class="gchip ' + gcls(x.level) + '">' + esc(x.level) + '</span>' : '<span class="gchip g0">ไม่ระบุห้อง</span>') +
+      '<span>' + (esc(x.major) || 'ไม่ระบุสาขา') + '</span>' +
+      (x.kind === 'grade' ? '<span class="ntag">เก็บเกรด</span>' : '') +
+      (x.ftype ? '<span class="fchip"' + tableColorStyle(x.fcolor) + '>' + esc(x.ftype) + '</span>' : '') + '</div></div>' +
+    '<div class="cstat">' + cstatHTML(x) + '</div><span class="chev" aria-hidden="true">›</span></article>';
+}
+// ---------- ปุ่มย้อนกลับของมือถือ / เบราว์เซอร์ ----------
+// ทุกครั้งที่ "เข้าไปลึกขึ้น" (เข้าห้อง, เลือกสาขา, เปิดรายละเอียด, เปิดตั้งค่า) จะเพิ่มประวัติ 1 ขั้น
+// กดย้อนกลับ = ถอยกลับหน้าก่อนหน้าในเว็บ (หน้าแรกค่อยออกจากเว็บ)
+var NAV = { depth: 0, waiting: false, timer: 0 };
+function navState(extra){
+  var st = { depth: NAV.depth, room: S.room || null, major: S.major || 'all' };
+  if (extra) for (var k in extra) st[k] = extra[k];
+  return st;
+}
+function navParams(st){
+  var p = {};
+  if (st.room && st.room !== '__all') p.room = st.room;
+  if (st.major && st.major !== 'all') p.major = st.major;
+  return p;
+}
+function navWrite(kind, st){
+  try {
+    if (GAS && google.script.history) google.script.history[kind](st, navParams(st));
+    else history[kind === 'push' ? 'pushState' : 'replaceState'](st, '');
+  } catch(e){}
+}
+function navPush(extra){ NAV.depth++; navWrite('push', navState(extra)); }
+function navReplace(extra){ navWrite('replace', navState(extra)); }
+// ถอยกลับ 1 ขั้นด้วยปุ่มในเว็บ (ใช้ประวัติของเบราว์เซอร์ ถ้าใช้ไม่ได้ ทำเองแทน)
+function navBack(fallback){
+  if (NAV.depth > 0) {
+    NAV.waiting = true;
+    clearTimeout(NAV.timer);
+    NAV.timer = setTimeout(function(){
+      if (!NAV.waiting) return;
+      NAV.waiting = false; NAV.depth = Math.max(0, NAV.depth - 1);
+      fallback(); navReplace();
+    }, 700);
+    try { history.back(); } catch(e){}
+  } else { fallback(); navReplace(); }
+}
+// เมื่อประวัติเปลี่ยน (กดย้อนกลับ / ไปข้างหน้า): ทำหน้าจอให้ตรงกับขั้นนั้น
+function navApply(st){
+  NAV.waiting = false; clearTimeout(NAV.timer);
+  st = st || {};
+  NAV.depth = st.depth || 0;
+  if (!st.set && !$('#drawer').hidden) hideSettings();
+  if (!st.d && S.detail) hideDetail();
+  var room = st.room || null, major = st.major || 'all';
+  if (room !== (S.room || null)) goRoom(room, 'none');
+  if (major !== S.major && S.room) goMajor(major, 'none');
+  if (st.d && S.detail !== st.d) showDetail(st.d);
+  if (st.set && $('#drawer').hidden) showSettings();
+}
+try {
+  if (GAS && google.script.history && google.script.history.setChangeHandler) google.script.history.setChangeHandler(function(e){ navApply(e && e.state); });
+} catch(e){}
+window.addEventListener('popstate', function(e){ if (!GAS) navApply(e.state); });
+
+function showDetail(key){
+  S.detail = key; renderDetail();
+  if (!S.detail) return false;
+  $('#detail').hidden = false; $('#detail').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  return true;
+}
+function hideDetail(){ S.detail = null; $('#detail').hidden = true; document.body.style.overflow = ''; }
+function openDetail(key){ if (showDetail(key)) navPush({ d: key }); }
+function closeDetail(){ if (!S.detail && $('#detail').hidden) return; navBack(hideDetail); }
+// แตะที่การ์ดหรือพื้นที่ว่างในหน้ารายละเอียด = ปิด (ยกเว้นปุ่มสถานะ ลิงก์ และเบอร์/ข้อความที่อาจกดค้างเพื่อคัดลอก)
+$('#detail').addEventListener('click', function(e){
+  if (e.target.closest('select, option, a, button, dd, input, .shead')) return;
+  var sel = window.getSelection && String(window.getSelection());
+  if (sel) return;
+  closeDetail();
+});
+function renderDetail(){
+  if (!S.detail) return;
+  var x = findByKey(S.detail);
+  if (!x) { closeDetail(); hideDetail(); return; }     // นักเรียนคนนี้ไม่อยู่ในข้อมูลแล้ว
+  $('#detailName').textContent = x.name;
+  $('#detailBody').innerHTML = rowHTML(x);
+}
+$('#detailBack').addEventListener('click', function(){ closeDetail(); });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && S.detail) closeDetail(); });
+
+$('#detail').addEventListener('change', function(e){
+  var t = e.target; if (!t.matches('select.pick')) return;
+  save(+t.getAttribute('data-r'), t.value);
+});
+$('#list').addEventListener('click', function(e){
+  if (e.target.closest('select, option, a, button')) return;
+  var c = e.target.closest('[data-open]'); if (c) openDetail(c.getAttribute('data-open'));
+});
+$('#list').addEventListener('keydown', function(e){
+  if (e.key !== 'Enter' || e.target.matches('select')) return;
+  var c = e.target.closest('[data-open]'); if (c) openDetail(c.getAttribute('data-open'));
+});
+if (COMPACT_MQ.addEventListener) COMPACT_MQ.addEventListener('change', function(){ if (S.data && S.room) renderList(); if (!isCompact()) closeDetail(); });
+
+function syncNote(){
+  var sy = S.data && S.data.synced, every = (S.data && S.data.syncEvery) || 5;
+  if (sy && sy.ok === false) return 'ดึงข้อมูลจาก Sheet B รอบล่าสุดไม่สำเร็จ แจ้งผู้ดูแล';
+  return 'รายชื่อดึงจาก Sheet B ทุก ' + every + ' นาที' + (sy && sy.time ? ' · ล่าสุด ' + whenText(sy.time) : '');
+}
+function renderList(){
+  renderDetail();
+  var rows = visibleRows(), list = $('#list'), total = scopeRows().length;
+  list.classList.toggle('compact', isCompact());
+  $('#count').innerHTML = '<span>แสดง ' + rows.length + ' จาก ' + total + ' คน</span><span>' + syncNote() + '</span>';
+  if (!total) {
+    list.innerHTML = '<div class="empty nodata"><b>ตอนนี้ยังไม่มีข้อมูลนักเรียน</b>' +
+      '<span>' + (isSpecial(S.room) ? 'กลุ่ม' + esc(roomLabel(S.room)) + (validTerm(S.term) ? ' ' + termLabel(S.term) : '') :
+        (S.major !== 'all' ? 'สาขา' + esc(majorText(S.major).replace(/^สาขา/, '')) + ' · ' : '') + 'ห้อง ' + esc(roomLabel(S.room))) +
+      ' ยังไม่มีรายชื่อ เมื่อเพิ่มรายชื่อใน Sheet B แล้ว หน้านี้จะแสดงเองภายในประมาณ ' + ((S.data && S.data.syncEvery) || 5) + ' นาที</span></div>';
+    return;
+  }
+  if (!rows.length) {
+    var html = '<div class="empty">ไม่พบรายชื่อที่ตรงกับตัวกรองใน' + (S.major !== 'all' ? 'สาขานี้' : 'ห้องนี้');
+    if (S.status !== 'all' || S.fin !== 'all') html += '<div style="margin-top:10px"><button type="button" class="btn" data-clearf>ล้างตัวกรอง (สถานะ / โปร)</button></div>';
+    var q = norm(S.q);
+    if (q) {
+      var elsewhere = S.data.rows.filter(function(x){
+        return scopeRows().indexOf(x) < 0 && norm([x.name, x.app, x.phone, x.major, x.level, x.fb, x.line].join('|')).indexOf(q) >= 0;
+      }).slice(0, 8);
+      if (elsewhere.length) {
+        html += '<div class="elsewhere"><p>พบในห้อง/สาขาอื่น กดเพื่อไปดู</p>' + elsewhere.map(function(x){
+          return '<button type="button" class="btn" data-jump-room="' + esc(roomKey(x)) + '" data-jump-major="' + esc(majorKey(x)) + '">' +
+            esc(x.name) + ' · ' + esc(roomLabel(roomKey(x))) + (x.major ? ' · ' + esc(x.major) : '') + '</button>';
+        }).join('') + '</div>';
+      }
+    }
+    list.innerHTML = html + '</div>';
+    return;
+  }
+  var ms = majorList(rows);
+  if (S.major === 'all' && ms.length > 1 && splitsByMajor(S.room)) {
+    list.innerHTML = ms.map(function(m){
+      var inM = rows.filter(function(x){ return majorKey(x) === m; });
+      var mc = counts(scopeRows().filter(function(x){ return majorKey(x) === m; }));
+      return '<h3 class="mgroup"><span>' + esc(majorText(m)) + '</span><span class="mgc">' + SHORT.done + ' ' + mc.done + '/' + (mc.total - mc.locked) + ' · แสดง ' + inM.length + ' คน</span></h3>' +
+        inM.map(itemHTML).join('');
+    }).join('');
+  } else {
+    list.innerHTML = rows.map(itemHTML).join('');
+  }
+}
+
+// ---------- events ----------
+$('#list').addEventListener('change', function(e){
+  var t = e.target; if (!t.matches('select.pick')) return;
+  save(+t.getAttribute('data-r'), t.value);
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-goroom]'); if (b) goRoom(b.getAttribute('data-goroom'));
+});
+// กระโดดไปห้อง/สาขาของนักเรียนที่ค้นเจอ โดยเก็บคำค้นไว้
+$('#list').addEventListener('click', function(e){
+  var b = e.target.closest('[data-jump-room]'); if (!b) return;
+  var q = S.q;
+  goRoom(b.getAttribute('data-jump-room'), 'replace');
+  goMajor(b.getAttribute('data-jump-major'), 'replace');
+  S.q = q; $('#q').value = q; renderList();
+});
+$('#termChips').addEventListener('click', function(e){
+  var b = e.target.closest('[data-term]'); if (b) setTerm(b.getAttribute('data-term'));
+});
+$('#termIn').addEventListener('input', function(e){
+  var v = e.target.value.trim();
+  setTerm(v ? (parseTermInput(v) || '__bad') : '', true);
+});
+$('#majors').addEventListener('click', function(e){
+  var b = e.target.closest('[data-major]'); if (b) goMajor(b.getAttribute('data-major'));
+});
+// ปุ่ม "ทุกห้อง": ถอยกลับหน้าแรก (เหมือนกดย้อนกลับ)
+$('#btnBack').addEventListener('click', function(){
+  if (NAV.depth > 0) navBack(function(){ goRoom(null, 'none'); });
+  else goRoom(null, 'replace');
+});
+$('#roomSel').addEventListener('change', function(e){ goRoom(e.target.value, 'replace'); });
+$('#stats').addEventListener('click', function(e){
+  var b = e.target.closest('[data-status]'); if (!b) return;
+  var s = b.getAttribute('data-status');
+  S.status = S.status === s ? 'all' : s; renderRoom();
+});
+$('#statusFilter').addEventListener('click', function(e){
+  var b = e.target.closest('[data-status]'); if (!b) return;
+  S.status = b.getAttribute('data-status'); renderRoom();
+});
+$('#q').addEventListener('input', function(e){
+  S.q = e.target.value; renderList();
+  // ค้นหาตอนเลื่อนลงไปลึกแล้ว: เลื่อนกลับให้เห็นผลลัพธ์แรกใต้ช่องค้นหา
+  var tb = $('#roomView .toolbar'), rb = $('#roomView .roombar');
+  var y = tb.parentNode.offsetTop + tb.offsetTop - rb.offsetHeight - 8;
+  if (window.scrollY > y + 4) window.scrollTo(0, Math.max(0, y));
+});
+// แตะช่องค้นหาแล้วเลือกข้อความเดิมทั้งหมด พิมพ์ชื่อคนถัดไปทับได้ทันที
+$('#q').addEventListener('focus', function(e){ var t = e.target; setTimeout(function(){ try { t.select(); } catch(err){} }, 0); });
+// เงาใต้แถบที่ติดอยู่ด้านบน + ความสูงของแถบห้อง (ให้ช่องค้นหาติดต่อใต้แถบห้องพอดี)
+(function(){
+  var rb = $('#roomView .roombar'), tb = $('#roomView .toolbar');
+  function upd(){
+    if ($('#roomView').hidden) return;
+    var h = rb.offsetHeight;
+    document.documentElement.style.setProperty('--rbh', h + 'px');
+    rb.classList.toggle('stuck', rb.getBoundingClientRect().top <= 0.5 && window.scrollY > 0);
+    tb.classList.toggle('stuck', tb.getBoundingClientRect().top <= h + 0.5);
+    rb.classList.toggle('flat', tb.classList.contains('stuck'));
+  }
+  window.addEventListener('scroll', upd, { passive: true });
+  window.addEventListener('resize', upd);
+  setInterval(upd, 1000);
+})();
+
+function toast(msg, bad, action){
+  var el = document.createElement('div');
+  el.className = 'toast' + (bad ? ' err' : '');
+  var t = document.createElement('span'); t.className = 'tmsg'; t.textContent = msg; el.appendChild(t);
+  if (action) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'tact'; b.textContent = action.label;
+    b.addEventListener('click', function(){ el.remove(); action.fn(); });
+    el.appendChild(b);
+  }
+  $('#toasts').appendChild(el);
+  setTimeout(function(){ el.remove(); }, action ? 8000 : (bad ? 6000 : 3200));
+}
+
+// ---------- settings (ผู้ดูแล) ----------
+function setMsg(m, bad){ var e = $('#setMsg'); e.textContent = m || ''; e.className = 'msg' + (bad ? ' bad' : ''); }
+function fillTabs(tabs, sel){
+  $('#setTab').innerHTML = (tabs || []).map(function(t){ return '<option' + (t === sel ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('');
+  $('#btnTab').disabled = !(tabs && tabs.length);
+}
+function whenText(iso){
+  var d = new Date(iso); if (isNaN(d)) return '';
+  var t = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ' น.';
+  return new Date().toDateString() === d.toDateString() ? 'วันนี้ ' + t : d.getDate() + '/' + (d.getMonth() + 1) + ' ' + t;
+}
+function syncHTML(sy){
+  sy = sy || {};
+  var l = sy.last, h = [];
+  var auto = sy.auto === null ? '<span class="bad">ยังไม่ได้อนุญาต — เรียกใช้ setupSync ใน Apps Script 1 ครั้ง</span>'
+    : (sy.auto ? 'เปิดอยู่ · ทุก ' + sy.every + ' นาที (' + sy.hours[0] + ':00–' + sy.hours[1] + ':00 น.)' : 'ปิดอยู่ (ข้อมูลเปลี่ยนเมื่อกดดึงเองเท่านั้น)');
+  h.push('ดึงอัตโนมัติ: <b>' + auto + '</b>');
+  if (!l) h.push('ยังไม่เคยดึงข้อมูล กด "ดึงข้อมูลตอนนี้" ระบบจะสร้าง Sheet C ให้');
+  else if (l.ok === false) h.push('<b class="bad">ดึงล่าสุดไม่สำเร็จ</b> (' + whenText(l.time) + '): ' + esc(friendly(l.error)));
+  else {
+    h.push('ดึงล่าสุด: <b>' + whenText(l.time) + '</b>' + (l.ms ? ' ใช้ ' + Math.max(1, Math.round(l.ms / 1000)) + ' วินาที' : '') +
+      (l.sourceB ? '<br>B: ' + esc(l.sourceB) : '') + (l.sourceA ? '<br>A: ' + esc(l.sourceA) : ''));
+    var items = (l.tabs || []).map(function(t){
+      var x = esc(t.tab) + ': นักเรียน ' + t.students + ' คน · มี FB/Line ' + t.contacts + ' คน';
+      if (t.special) x += ' · กลุ่มพิเศษ (เก็บเกรด/เทียบโอน) ' + t.special + ' คน';
+      if (t.hidden) x += ' · ข้ามแถวที่ซ่อนใน B ' + t.hidden + ' แถว';
+      if (t.cols) x += '<br><small>คอลัมน์ใน B (หาจาก' + esc(t.how || 'ข้อมูล') + '): ' + colsText(t.cols) + '</small>';
+      if (t.dup && t.dup.length) x += '<br><span class="bad">ซ้ำใน B: ' + esc(t.dup.join(', ')) + '</span>';
+      if (t.ambiguous && t.ambiguous.length) x += '<br><span class="bad">ชื่อซ้ำใน A ข้อมูลไม่ตรงกัน ตรวจช่อง "ที่มาของข้อมูล": ' + esc(t.ambiguous.join(', ')) + '</span>';
+      if (t.note) x += '<br><span class="bad">' + esc(t.note) + '</span>';
+      return '<li>' + x + '</li>';
+    });
+    (l.warnings || []).forEach(function(w){ items.push('<li class="bad">' + esc(w) + '</li>'); });
+    if (items.length) h.push('<ul>' + items.join('') + '</ul>');
+  }
+  return h.join('<br>');
+}
+var FIELD_TH = { app:'เลขที่ใบสมัคร', name:'ชื่อ-นามสกุล', applied:'วันที่สมัคร', enrolled:'วันที่มอบตัว', phone:'เบอร์โทร', level:'ชั้น', major:'สาขา', status:'สถานะเดิม', note:'หมายเหตุ' };
+var FIELD_ORDER = ['app','name','applied','enrolled','phone','level','major','note'];
+function colsText(cols){
+  return FIELD_ORDER.map(function(f){ return esc(FIELD_TH[f]) + ' <code>' + (cols[f] ? esc(cols[f]) : '—') + '</code>'; }).join(' · ');
+}
+// รายการแท็บของ B ให้ติ๊กเลือก: list = [{ name, students, special, error }] หรือชื่อแท็บอย่างเดียว
+function renderTabPick(list, selected){
+  S.bSel = selected || S.bSel || [];
+  if (!list || !list.length) { $('#bTabs').innerHTML = '<span class="hint">วางลิงก์ด้านบน แล้วรายชื่อแท็บจะขึ้นที่นี่</span>'; return; }
+  $('#bTabs').innerHTML = list.map(function(t){
+    if (typeof t === 'string') t = { name: t };
+    var info = t.students === undefined ? '' : (t.error ? '<small class="bad">' + esc(t.error) + '</small>'
+      : '<small>นักเรียน ' + t.students + ' คน' + (t.special ? ' · กลุ่มพิเศษ ' + t.special + ' คน' : '') + (t.dup ? ' · แถวซ้ำ ' + t.dup : '') + '</small>');
+    return '<label><input type="radio" name="btab" value="' + esc(t.name) + '"' + (S.bSel[0] === t.name ? ' checked' : '') + '><span>' + esc(t.name) + info + '</span></label>';
+  }).join('');
+}
+function renderATabs(list, selected){
+  S.aSel = selected || [];
+  S.aListed = !!(list && list.length);
+  if (!S.aListed) { $('#aTabs').innerHTML = '<span class="hint">ใช้ทุกแท็บที่มีคอลัมน์ FB./line · กด "ตรวจไฟล์" เพื่อเลือกเอง</span>'; return; }
+  $('#aTabs').innerHTML = list.map(function(t){
+    if (typeof t === 'string') t = { name: t };
+    var info = t.hasCol === undefined ? '' : (t.hasCol ? '<small>มี FB/Line ' + t.contacts + ' คน · คอลัมน์ ' + esc(t.col) + '</small>'
+      : '<small>ไม่มีคอลัมน์ FB./line</small>');
+    return '<label' + (t.hasCol === false ? ' style="opacity:.6"' : '') + '><input type="checkbox" value="' + esc(t.name) + '"' + (S.aSel.indexOf(t.name) >= 0 ? ' checked' : '') +
+      (t.hasCol === false ? ' disabled' : '') + '><span>' + esc(t.name) + info + '</span></label>';
+  }).join('');
+}
+function pickedATabs(){
+  return Array.prototype.map.call(document.querySelectorAll('#aTabs input:checked'), function(i){ return i.value; });
+}
+function pickedTabs(){
+  return Array.prototype.map.call(document.querySelectorAll('#bTabs input:checked'), function(i){ return i.value; });
+}
+function renderColMap(map, detected){
+  map = map || {}; detected = detected || {};
+  $('#colMap').innerHTML = FIELD_ORDER.map(function(f){
+    return '<label>' + esc(FIELD_TH[f]) + '<input data-f="' + f + '" maxlength="2" value="' + esc(map[f] || '') + '" placeholder="' + esc(detected[f] ? 'อัตโนมัติ ' + detected[f] : 'อัตโนมัติ') + '" autocomplete="off"></label>';
+  }).join('');
+  $('#colMapBox').open = Object.keys(map).length > 0;
+}
+function colMapValue(){
+  var m = {};
+  Array.prototype.forEach.call(document.querySelectorAll('#colMap input'), function(i){
+    var v = i.value.trim().toUpperCase(); if (v) m[i.getAttribute('data-f')] = v;
+  });
+  return m;
+}
+function previewHTML(p){
+  var sel = pickedTabs();
+  var tabs = p.tabs.filter(function(t){ return sel.indexOf(t.name) >= 0; });
+  if (!tabs.length) return 'ไฟล์ "' + esc(p.file) + '" · ยังไม่ได้ติ๊กเลือกแท็บ';
+  return tabs.map(function(t){
+    if (t.error) return '<b>' + esc(t.name) + '</b>: <span class="bad">' + esc(t.error) + '</span>';
+    var e = t.example, h = '<b>' + esc(t.name) + '</b> · นักเรียน ' + t.students + ' คน<br><small>คอลัมน์ (หาจาก' + esc(t.how) + '): ' + colsText(t.cols) + '</small>';
+    if (t.sections && t.sections.length) h += '<br><small>หัวข้อในชีต: ' + esc(t.sections.join(' · ')) + '</small>';
+    if (e) h += '<br><small>ตัวอย่างคนแรก: ' + esc([e.app, e.name, e.applied, e.enrolled, e.level, e.major].filter(String).join(' | ')) +
+      (e.group ? ' · กลุ่ม ' + esc(e.group) : '') + '</small><br><small>ถ้าข้อมูลตัวอย่างอยู่ผิดช่อง ให้กำหนดคอลัมน์เองด้านล่าง แล้วกด "ตรวจไฟล์" อีกครั้ง</small>';
+    return h;
+  }).join('<hr style="border:0;border-top:1px solid var(--line);margin:8px 0">');
+}
+
+function fillSettings(s){
+  S.syncAuto = !!(s.sync && s.sync.auto);
+  S.authMissing = !!(s.sync && s.sync.auto === null);
+  $('#adminWrap').style.display = s.needAdmin ? 'flex' : 'none';
+  var db = s.db || {};
+  $('#dbInfo').innerHTML = db.url ? 'ไฟล์ "' + esc(db.name) + '" · <a href="' + esc(db.url) + '" target="_blank" rel="noopener">เปิด Sheet C</a>'
+    : (db.error ? '<span style="color:var(--err)">' + esc(db.error) + '</span>' : 'ยังไม่มี Sheet C — กด "ดึงข้อมูลตอนนี้" ระบบจะสร้างให้');
+  fillTabs(db.tabs, db.tab);
+  if (document.activeElement !== $('#srcB')) $('#srcB').value = s.srcB || '';
+  S.lastB = s.srcB || '';
+  if (document.activeElement !== $('#srcA')) $('#srcA').value = s.srcA || '';
+  if (!S.preview || S.preview.url !== s.srcB) {
+    S.preview = null; $('#bPreview').hidden = true;
+    renderTabPick(s.srcBTabs || [], s.srcBTabs || []);
+  }
+  if (!S.previewA || S.previewA.url !== s.srcA) { S.previewA = null; renderATabs(s.srcATabs || [], s.srcATabs || []); }
+  var lt = s.sync && s.sync.last && s.sync.last.tabs && s.sync.last.tabs[0];
+  if (document.activeElement === null || !$('#colMap').contains(document.activeElement)) renderColMap(s.srcBMap, lt && lt.cols);
+  $('#syncInfo').innerHTML = syncHTML(s.sync);
+  $('#btnAuto').textContent = S.syncAuto ? 'ปิดดึงอัตโนมัติ' : 'เปิดดึงอัตโนมัติ';
+  $('#btnAuto').disabled = S.authMissing;
+}
+function openSettings(){ if (showSettings()) navPush({ set: 1 }); }
+function hideSettings(){ $('#drawer').hidden = true; }
+function closeSettings(){ if ($('#drawer').hidden) return; navBack(hideSettings); }
+function showSettings(){
+  if (!$('#drawer').hidden) return false;
+  $('#drawer').hidden = false; setMsg('กำลังโหลด…');
+  call('getSettings', S.pin).then(function(s){ fillSettings(s); setMsg(''); })
+    .catch(function(e){ setMsg(e.message, true); });
+  return true;
+}
+function reloadAll(){
+  S.data = null; S.sig = ''; S.first = true; S.status = 'all';
+  $('#home').hidden = true; $('#roomView').hidden = true; $('#boot').hidden = false;
+  load();
+}
+var SET_BTNS = function(){ return [$('#btnTab'), $('#btnSyncNow'), $('#btnAuto'), $('#btnPreview'), $('#btnPreviewA')]; };
+function busy(on){
+  SET_BTNS().forEach(function(b){ b.disabled = on; });
+  if (!on) { $('#btnAuto').disabled = !!S.authMissing; $('#btnTab').disabled = !$('#setTab').options.length; }
+}
+function isSheetLink(v){ return /docs\.google\.com\/spreadsheets\/d\/[\w-]{20,}|^[\w-]{25,}$/.test(v); }
+$('#btnSettings').addEventListener('click', openSettings);
+$('#btnCancel').addEventListener('click', closeSettings);
+$('#drawer').addEventListener('click', function(e){ if (e.target.id === 'drawer') closeSettings(); });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !$('#drawer').hidden) closeSettings(); });
+// ปุ่มปรับธีม
+function themeMenu(open){
+  var m = $('#themeMenu'); if (!m) return;
+  m.hidden = !open; $('#btnTheme').setAttribute('aria-expanded', String(open));
+  // เมนูลอยอยู่บนสุด (ไม่ให้แถบห้อง/แถบค้นหาที่ติดขอบจอทับ) วางใต้ปุ่มพอดี
+  if (open) {
+    var r = $('#btnTheme').getBoundingClientRect();
+    m.style.top = Math.round(r.bottom + 8) + 'px';
+    m.style.right = Math.max(16, Math.round(window.innerWidth - r.right)) + 'px';
+  }
+}
+$('#btnTheme').addEventListener('click', function(e){ e.stopPropagation(); themeMenu($('#themeMenu').hidden); });
+$('#themeMenu').addEventListener('click', function(e){
+  e.stopPropagation();
+  var b = e.target.closest('[data-mode]'); if (!b) return;
+  THEME.mode = b.getAttribute('data-mode'); store.set('theme', THEME.mode);
+  applyTheme();
+});
+document.body.appendChild($('#themeMenu'));   // ย้ายออกจากหัวเว็บ ให้อยู่เหนือทุกแถบ
+document.addEventListener('click', function(){ if (!$('#themeMenu').hidden) themeMenu(false); });
+window.addEventListener('scroll', function(){ if (!$('#themeMenu').hidden) themeMenu(false); }, { passive: true });
+window.addEventListener('resize', function(){ if (!$('#themeMenu').hidden) themeMenu(false); });
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape' && !$('#themeMenu').hidden) { themeMenu(false); $('#btnTheme').focus(); } });
+applyTheme();
+$('#btnTab').addEventListener('click', function(){
+  var tab = $('#setTab').value; if (!tab) return setMsg('ยังไม่มีแท็บให้เลือก กด "ดึงข้อมูลตอนนี้" ก่อน', true);
+  busy(true); setMsg('กำลังบันทึก…');
+  call('saveSettings', S.pin, $('#setAdmin').value, { tab: tab }).then(function(s){
+    fillSettings(s); closeSettings(); toast('เว็บแสดงแท็บ "' + tab + '" แล้ว'); reloadAll();
+  }).catch(function(e){ setMsg(e.message, true); }).then(function(){ busy(false); });
+});
+$('#btnSyncNow').addEventListener('click', function(){
+  var b = $('#srcB').value.trim(), a = $('#srcA').value.trim();
+  if (!b) return setMsg('ใส่ลิงก์ Sheet B ก่อน', true);
+  if (!isSheetLink(b)) return setMsg('ลิงก์ Sheet B ไม่ใช่ลิงก์ Google Sheet (ต้องขึ้นต้นด้วย https://docs.google.com/spreadsheets/d/…)', true);
+  if (a && !isSheetLink(a)) return setMsg('ลิงก์ Sheet A ไม่ใช่ลิงก์ Google Sheet (ต้องขึ้นต้นด้วย https://docs.google.com/spreadsheets/d/…)', true);
+  busy(true);
+  setMsg('กำลังดึงข้อมูลจาก Sheet B และ A… อาจใช้เวลา 10–60 วินาที อย่าปิดหน้านี้');
+  var tabs = pickedTabs();
+  if (!tabs.length) { busy(false); return setMsg('เลือกแท็บที่จะใช้ก่อน (ถ้ายังไม่เห็นรายชื่อแท็บ กด "ตรวจไฟล์")', true); }
+  var payload = { srcB: b, srcA: a, bTabs: tabs, bMap: colMapValue() };
+  if (S.aListed) payload.aTabs = pickedATabs();   // ไม่ติ๊กเลย = ทุกแท็บ
+  call('syncNow', S.pin, $('#setAdmin').value, payload).then(function(s){
+    var moved = S.data && s.db && s.db.tab && s.db.tab !== S.data.tab;
+    fillSettings(s); setMsg('ดึงข้อมูลเสร็จแล้ว' + (s.db && s.db.tab ? ' · เว็บแสดงแท็บ "' + s.db.tab + '"' : ''));
+    S.sig = ''; if (S.data && !moved) load(); else reloadAll();
+  }).catch(function(e){
+    setMsg(e.message, true);
+    call('getSettings', S.pin).then(fillSettings).catch(function(){});
+  }).then(function(){ busy(false); });
+});
+$('#btnPreview').addEventListener('click', function(){
+  var b = $('#srcB').value.trim();
+  if (!b) return setMsg('ใส่ลิงก์ Sheet B ก่อน', true);
+  if (!isSheetLink(b)) return setMsg('ลิงก์ Sheet B ไม่ใช่ลิงก์ Google Sheet (ต้องขึ้นต้นด้วย https://docs.google.com/spreadsheets/d/…)', true);
+  busy(true); setMsg('กำลังตรวจไฟล์ B…');
+  call('previewB', S.pin, $('#setAdmin').value, b, colMapValue()).then(function(p){
+    p.url = b; S.preview = p;
+    var sel = pickedTabs().filter(function(n){ return p.tabs.some(function(t){ return t.name === n; }); });
+    if (!sel.length) {   // ไฟล์ใหม่: ติ๊กแท็บที่มีนักเรียนมากที่สุดให้ (ไม่เอาแท็บสำเนา)
+      // เลือกแท็บมอบตัวก่อน (ไม่เอาแท็บสำเนา) ถ้าไม่มีค่อยเลือกแท็บที่มีนักเรียนมากที่สุด
+      var cand = p.tabs.filter(function(t){ return !/^(สำเนา|copy of)/i.test(t.name) && t.students >= 1; });
+      var best = cand.filter(function(t){ return /มอบตัว|กรอกชื่อ/.test(t.name) && !/นัดมอบตัว/.test(t.name); })[0] ||
+        cand.sort(function(x, y){ return y.students - x.students; })[0];
+      if (best) sel = [best.name];
+    }
+    renderTabPick(p.tabs, sel);
+    $('#bPreview').hidden = false; $('#bPreview').innerHTML = previewHTML(p);
+    setMsg('พบ ' + p.tabs.length + ' แท็บในไฟล์ "' + p.file + '" · เลือกแท็บที่จะใช้ แล้วกด "ดึงข้อมูลตอนนี้"');
+  }).catch(function(e){ setMsg(e.message, true); }).then(function(){ busy(false); });
+});
+// วางลิงก์ใหม่ → แสดงรายชื่อแท็บให้เลือกเอง (ไม่ต้องกด "ตรวจไฟล์")
+var autoPrevTimer = 0;
+function autoPreview(){
+  clearTimeout(autoPrevTimer);
+  autoPrevTimer = setTimeout(function(){
+    var b = $('#srcB').value.trim();
+    if (!isSheetLink(b) || (S.preview && S.preview.url === b) || $('#btnPreview').disabled) return;
+    if ($('#adminWrap').style.display !== 'none' && !$('#setAdmin').value) return setMsg('ใส่รหัสผู้ดูแลด้านบนก่อน แล้วรายชื่อแท็บจะขึ้นให้เลือก', true);
+    $('#btnPreview').click();
+  }, 500);
+}
+$('#srcB').addEventListener('input', autoPreview);
+$('#srcB').addEventListener('paste', autoPreview);
+$('#setAdmin').addEventListener('change', function(){ if ($('#srcB').value.trim() && !(S.preview && S.preview.url === $('#srcB').value.trim()) && $('#srcB').value.trim() !== S.lastB) autoPreview(); });
+$('#btnPreviewA').addEventListener('click', function(){
+  var a = $('#srcA').value.trim();
+  if (!a) return setMsg('ใส่ลิงก์ Sheet A ก่อน', true);
+  if (!isSheetLink(a)) return setMsg('ลิงก์ Sheet A ไม่ใช่ลิงก์ Google Sheet (ต้องขึ้นต้นด้วย https://docs.google.com/spreadsheets/d/…)', true);
+  busy(true); setMsg('กำลังตรวจไฟล์ A…');
+  call('previewA', S.pin, $('#setAdmin').value, a).then(function(p){
+    p.url = a; S.previewA = p;
+    var sel = pickedATabs().filter(function(n){ return p.tabs.some(function(t){ return t.name === n && t.hasCol; }); });
+    renderATabs(p.tabs, sel);
+    var n = p.tabs.filter(function(t){ return t.hasCol; }).length;
+    setMsg('ตรวจไฟล์ "' + p.file + '" แล้ว · มีคอลัมน์ FB./line ' + n + ' แท็บ' + (n ? ' · ติ๊กแท็บที่ต้องการ (ไม่ติ๊ก = ใช้ทุกแท็บ) แล้วกด "ดึงข้อมูลตอนนี้"' : ''), !n);
+  }).catch(function(e){ setMsg(e.message, true); }).then(function(){ busy(false); });
+});
+$('#bTabs').addEventListener('change', function(){
+  S.bSel = pickedTabs();
+  if (S.preview) $('#bPreview').innerHTML = previewHTML(S.preview);
+});
+$('#btnAuto').addEventListener('click', function(){
+  var on = !S.syncAuto; busy(true);
+  setMsg(on ? 'กำลังเปิดดึงอัตโนมัติ…' : 'กำลังปิดดึงอัตโนมัติ…');
+  call('setAutoSync', S.pin, $('#setAdmin').value, on).then(function(s){
+    fillSettings(s); setMsg(on ? 'เปิดดึงอัตโนมัติแล้ว' : 'ปิดดึงอัตโนมัติแล้ว ข้อมูลจะเปลี่ยนเมื่อกดดึงเองเท่านั้น');
+  }).catch(function(e){ setMsg(e.message, true); }).then(function(){ busy(false); });
+});
+
+// ---------- PIN ----------
+function showGate(){ $('#gate').hidden = false; setTimeout(function(){ $('#pinInput').focus(); }, 50); }
+$('#gateForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var pin = $('#pinInput').value.trim();
+  call('checkAccess', pin).then(function(a){
+    if (!a.ok) { $('#gateMsg').textContent = 'รหัสไม่ถูกต้อง'; return; }
+    // เก็บ "ตั๋ว" ที่ระบบออกให้แทนรหัสจริง (รหัสจริงไม่ถูกเก็บในเครื่อง)
+    S.pin = a.token || pin; store.set('pin', S.pin); $('#pinInput').value = ''; $('#gate').hidden = true; load();
+  }).catch(function(err){ $('#gateMsg').textContent = err.message; });
+});
+
+// ---------- demo: ใช้เฉพาะหน้าตัวอย่าง (ไม่มี Apps Script) ----------
+var Demo = (function(){
+  var P = [
+    ['2569000400','01/09/69','05/09/69','นางสาวกัญญาณัฐ ทองดี','081-000-1100 / 089-000-2200','ปวช.1/3 B','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000406','02/09/69','06/09/69','นายภูริพัฒน์ ศรีสุข','081-000-1101 / 089-000-2201','ปวช.1/1 A','ปวช.1 พาณิชยกรรม',''],
+    ['2569000412','03/09/69','07/09/69','นางสาวปวีณ์ธิดา แก้วมณี','081-000-1102 / 089-000-2202','ปวช.1/3 B','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000418','04/09/69','08/09/69','นายธนกฤต บุญมา','081-000-1103 / 089-000-2203','ปวช.1/2 A','ปวช.1 พาณิชยกรรม','ยังไม่เข้า'],
+    ['2569000424','05/09/69','09/09/69','นางสาวชนิดาภา สายทอง','081-000-1104 / 089-000-2204','ปวส.1/1 A','เทคโนโลยีธุรกิจดิจิทัล','เข้าแล้ว'],
+    ['2569000430','06/09/69','10/09/69','นายกิตติพัศ จันทร์เพ็ญ','081-000-1105 / 089-000-2205','ปวช.1/3 B','ปวช.1 พาณิชยกรรม','ไม่ต้องเข้า'],
+    ['2569000436','07/09/69','11/09/69','นางสาวอรุณรัตน์ ใจดี','081-000-1106 / 089-000-2206','ปวช.1/1 A','ปวช.1 พาณิชยกรรม',''],
+    ['2569000442','08/09/69','12/09/69','นายวรเมธ พรหมวงศ์','081-000-1107 / 089-000-2207','ปวส.1/2 B','ภาษาและการจัดการ','ออกจากกลุ่มแล้ว'],
+    ['2569000448','09/09/69','13/09/69','นางสาวสุพิชญา รุ่งเรือง','081-000-1108','ปวช.1/2 A','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000454','10/09/69','14/09/69','นายณัฐวุฒิ แสงอรุณ','081-000-1109 / 089-000-2209','ปวช.1/3 B','ปวช.1 พาณิชยกรรม',''],
+    ['2569000460','11/09/69','15/09/69','นางสาวพิมพ์ลดา มีสุข','081-000-1110 / 089-000-2210','ปวส.1/1 A','เทคโนโลยีธุรกิจดิจิทัล',''],
+    ['2569000466','12/09/69','16/09/69','นายศุภกร ทองประเสริฐ','081-000-1111 / 089-000-2211','ปวช.1/1 A','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000472','13/09/69','17/09/69','นางสาวธิดารัตน์ วงศ์ใหญ่','081-000-1112 / 089-000-2212','ปวช.1/3 B','ปวช.1 พาณิชยกรรม',''],
+    ['2569000478','14/09/69','18/09/69','นายปฐวี เรืองศรี','081-000-1113 / 089-000-2213','ปวส.1/2 B','ภาษาและการจัดการ','เข้าแล้ว'],
+    ['2569000484','15/09/69','19/09/69','นางสาวมนัสนันท์ ศรีวงศ์','081-000-1114 / 089-000-2214','ปวช.1/2 A','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000490','16/09/69','20/09/69','นายอนุชา แก้วกาญจน์','081-000-1115 / 089-000-2215','ปวช.1/1 A','ปวช.1 พาณิชยกรรม',''],
+    ['2569000496','17/09/69','21/09/69','นางสาวณิชาภัทร บุญยืน','081-000-1116 / 089-000-2216','ปวช.1/3 B','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000502','18/09/69','22/09/69','นายเจษฎา มั่นคง','081-000-1117 / 089-000-2217','ปวส.1/1 A','เทคโนโลยีธุรกิจดิจิทัล','เข้าแล้ว'],
+    ['2569000508','19/09/69','23/09/69','นางสาวกมลชนก ดวงดี','081-000-1118 / 089-000-2218','ปวช.1/2 A','ปวช.1 พาณิชยกรรม',''],
+    ['2569000514','20/09/69','24/09/69','นายภาณุวัฒน์ สุขใจ','081-000-1119 / 089-000-2219','ปวส.1/2 B','ภาษาและการจัดการ',''],
+    ['2569000520','21/09/69','25/09/69','นางสาวศศิธร พรมมา','081-000-1120 / 089-000-2220','ปวช.1/1 A','ปวช.1 พาณิชยกรรม','เข้าแล้ว'],
+    ['2569000526','22/09/69','26/09/69','นายธีรภัทร ใจกล้า','081-000-1121 / 089-000-2221','ปวช.1/3 B','ปวช.1 พาณิชยกรรม','']
+  ];
+  var LOCK = function(v){ return !!v && v !== 'เข้าแล้ว' && v !== 'ยังไม่เข้า'; };
+  var rows = P.map(function(p, i){
+    // ห้องภาคเรียนพิเศษ (B) มีหลายสาขาในห้องเดียว เพื่อให้เห็นการแยกตามสาขา
+    var lvl = p[5].replace(/\s*1\/\d\s*/, ''), st = p[7];
+    if (i === 4) lvl = p[5] + ' ไม่นับ';
+    if (i === 9) st = 'ยังไม่ได้เข้า';
+    if (i === 15) st = '31/5/69 มอบตัวออนไลน์ ชำระรับโปร 1,500 บาท';
+    var unc = / ไม่นับ$/.test(lvl); lvl = lvl.replace(/ ไม่นับ$/, '');
+    var odd = !!st && !/^(เข้าแล้ว|ยังไม่(ได้)?เข้า)$/.test(st) && !/ไม่ต้องเข้า|ออกจากกลุ่ม/.test(st);
+    var major = /B$/.test(p[5]) ? ['การบัญชี','ภาษาและการจัดการธุรกิจระหว่างประเทศ','เทคโนโลยีธุรกิจดิจิทัล'][i % 3] : p[6];
+    return { r: 17 + i, app:p[0], applied:p[1], enrolled:p[2], name:p[3], phone:p[4], level:lvl, major:major, status:st,
+             uncounted: unc, oddStatus: odd, locked: unc || (LOCK(st) && !/^ยังไม่ได้เข้า$/.test(st)), kind:'', note:'',
+             ftype: ['โปร 999','ผ่อนจ่ายปกติ','กยศ.','โปร 500','กรณีพิเศษ','ชำระเต็มจำนวน'][i % 6],
+             fin: ['งวดแรกชำระ 999 บาท','งวดแรกชำระ 3,900 บาท','ชำระ 1,000 บาท กู้กยศ.','งวดแรกชำระ 500 บาท','งวดแรกชำระ 1,500 บาท','ชำระเต็มจำนวน 10,400 บาท'][i % 6],
+             fcolor: ['#9900ff','#00ff00','#00ff00','#ffff00','#ff0000','#00ff00'][i % 6],
+             fnote: i % 6 === 4 ? 'นัดชำระส่วนที่เหลือ 30 มิ.ย. 69' : '' };
+  });
+  // ตัวอย่างเคสพิเศษจากช่อง K
+  [
+    ['2569000601','นางสาวรัชนีกร ทองสุข','ปวส.1/1 A','การบัญชี','เข้าแล้ว','grade','10/9/69 ชำระ 2,500 บาท เก็บเกรด 1/69 วิชาบัญชีเบื้องต้น'],
+    ['2569000602','นายอภิวัฒน์ คงดี','ปวส.1/2 B','การตลาด','','grade','เก็บเกรด 1/69 ค้างวิชาคณิตศาสตร์ ชำระแล้ว'],
+    ['2569000603','นางสาวพรรณิภา ใจงาม','ปวช.1/1 A','ปวช.1 พาณิชยกรรม','','grade','เก็บเกรด 2/68 (เอิร์น) นัดสอบ 15/10/69'],
+    ['2569000604','นายสิทธิชัย มีบุญ','ปวส.1/1 A','เทคโนโลยีธุรกิจดิจิทัล','เข้าแล้ว','grade','เก็บเกรด 2/2568 วิชาโปรแกรมสำนักงาน'],
+    ['2569000605','นางสาวลลิตา ศรีทอง','ปวส.1/2 B','การบัญชี','','grade','เก็บเกรด (รอยืนยันเทอม)'],
+    ['2569000606','นายกฤษดา ทองมา','ปวส.1/1 A','การตลาด','เข้าแล้ว','transfer','เทียบโอนจากวิทยาลัยเดิม 12 หน่วยกิต'],
+    ['2569000607','นางสาวจิราพร สุขเจริญ','ปวส.1/2 B','ภาษาและการจัดการธุรกิจระหว่างประเทศ','','transfer','เทียบโอน รอเอกสาร'],
+    ['2569000608','นายวีรพล ศักดิ์ดี','ปวส.1/2 B','การบัญชี','','grade','เก็บ เกรด 1/69 และขอเทียบโอนบางวิชา']
+  ].forEach(function(p, i){
+    rows.push({ r: 60 + i, app:p[0], applied:'20/09/69', enrolled:'25/09/69', name:p[1], phone:'081-000-' + (2000 + i) + ' / 089-000-' + (3000 + i),
+      level:p[2], major:p[3], status:p[4], uncounted:false, oddStatus:false, locked:false, kind:p[5], note:p[6], bothKinds: /เทียบโอน/.test(p[6]) && /เก็บ\s*เกรด/.test(p[6]) });
+  });
+  var FBS = ['Kanya Thongdee', '', 'Paweethida Kaew', 'Thanakrit Boonma', '', 'Kittiphat J.', 'Arunrat Jaidee', '', 'Supitcha R.'];
+  var LNS = ['kanya_td', 'phuri.ss', '', 'tnk2551', '', '', 'arun.rat', 'woramet99', ''];
+  rows.forEach(function(x, i){
+    x.level = String(x.level).replace(/\s*1\/\d\s*/, '');
+    x.fb = x.fb || FBS[i % FBS.length]; x.line = x.line || LNS[i % LNS.length];
+    if (x.kind && x.note && !/^(เก็บเกรด|เทียบโอน)/.test(x.note)) x.note = (x.kind === 'grade' ? 'เก็บเกรด' : 'เทียบโอน') + ' · ' + x.note;
+  });
+  var clone = function(x){ return JSON.parse(JSON.stringify(x)); };
+  var later = function(x, ms){ return new Promise(function(res){ setTimeout(function(){ res(clone(x)); }, ms || 280); }); };
+  var URL0 = 'https://docs.google.com/spreadsheets/d/1KFnSY_1g-enBTEa3H-OZ5vQ12mKfrsl4-25K-W4tWls/edit';
+  return {
+    checkAccess: function(){ return later({ needPin:false, ok:true }, 50); },
+    getSnapshot: function(){ return later(null, 30); },
+    getData: function(){ return later({ ver: VER, editLockedInA: true, statusSkip: 'ไม่ต้องเข้า', file:'ฐานข้อมูลเว็บ (ตัวอย่าง)', tab:'กรอกชื่อลงระบบ', url:URL0, statusDone:'เข้าแล้ว', statusNot:'ยังไม่เข้า', majorNo: [['บัญชี',1],['ตลาด',2],['เทคโน',3],['ภาษา',4]], splitByMajor: { 'ปวช': false, 'ปวส': true }, special: { grade:'เก็บเกรด', transfer:'เทียบโอน' }, majors: { 'ปวช': [], 'ปวส': ['การบัญชี', 'การตลาด', 'ภาษาและการจัดการธุรกิจระหว่างประเทศ', 'เทคโนโลยีธุรกิจดิจิทัล'] }, rows: rows.filter(function(x){ return !x.uncounted && (/A$/i.test(String(x.level).replace(/\s+/g, '')) || !(x.locked && !x.oddStatus)); }) }); },
+    setStatus: function(pin, req){
+      var x = rows.filter(function(y){ return y.name === req.name && y.app === req.app; })[0];
+      var inA = /A$/i.test(String(x && x.level).replace(/\s+/g, ''));
+      if (!x || x.uncounted || (x.locked && !inA)) return Promise.reject(new Error('สถานะนี้แก้จากหน้าเว็บไม่ได้'));
+      x.status = req.value === 'ยังไม่เข้า' ? '' : req.value;
+      x.locked = req.value === 'ไม่ต้องเข้า';
+      return later({ ok:true, row:req.row }, 450);
+    },
+    getSettings: function(){
+      return later({ needAdmin:true, srcB:'https://docs.google.com/spreadsheets/d/1WF-uO7-sz_xzaG208gxJvVzLcKFo3cKpmQJrgoaAyEg/edit',
+        srcBTabs:['กรอกชื่อลงระบบ'], srcBMap:{}, srcA:'https://docs.google.com/spreadsheets/d/1R_dIHkpjsGWdo7EXiwfjL0G5fdHWFLXSeG4wHf_kb_I/edit',
+        db:{ url:URL0, name:'ฐานข้อมูลเว็บติดตามกลุ่ม Line (Sheet C)', tabs:['กรอกชื่อลงระบบ'], tab:'กรอกชื่อลงระบบ', error:'' },
+        sync:{ auto:true, every:5, hours:[6,22], last:{ ok:true, time:new Date(Date.now() - 180000).toISOString(), ms:9000, sourceB:'รายชื่อมอบตัว 69',
+          sourceA:'Krirk institution สมัครเรียน ปีการศึกษา 2569', warnings:[],
+          tabs:[{ tab:'กรอกชื่อลงระบบ', students:309, contacts:256, special:8, hidden:0, dup:['นายตัวอย่าง ซ้ำกัน (แถว 166 และ 167)'], ambiguous:[], how:'ข้อมูล',
+            cols:{ app:'E', applied:'F', enrolled:'G', name:'I', phone:'J', level:'K', major:'L', status:'M', note:'N' } }] } } });
+    },
+    previewA: function(){ return later({ file:'Krirk institution สมัครเรียน ปีการศึกษา 2569', tabs:[
+      { name:'ใบสมัคร 1/2569', hasCol:true, contacts:498, col:'K' }, { name:'มอบตัว 1/69 ปีการศึกษา 2569', hasCol:false, contacts:0, col:'' },
+      { name:'ใบสมัคร 2/2569', hasCol:true, contacts:61, col:'K' }, { name:'มอบตัว 2/69 ปีการศึกษา 2569', hasCol:false, contacts:0, col:'' },
+      { name:'สนใจเทียบโอน 1/69', hasCol:true, contacts:140, col:'K' }, { name:'สนใจ 1/69', hasCol:true, contacts:14, col:'I' } ] }, 700); },
+    previewB: function(pin, pass, url, map){
+      return later({ file:'รายชื่อมอบตัว 69', tabs:[
+        { name:'กรอกชื่อลงระบบ', students:309, special:8, dup:3, how:'ข้อมูล', sections:['เก็บเกรด 1/69','เก็บเกรด 2/69','เทียบโอน','ปวช.1A','ปวช.1B','ปวส.1A','ปวส.1B'],
+          cols:{ app:(map && map.app) || 'E', applied:'F', enrolled:'G', name:(map && map.name) || 'I', phone:'J', level:'K', major:'L', status:'M', note:'N' },
+          example:{ app:'Walk-in', name:'นายตัวอย่าง ใจดี', applied:'10/02/69', enrolled:'01/03/69', level:'ปวช.A', major:'ปวช.1 พาณิชกรรม', status:'ไม่ต้องเข้า', group:'เก็บเกรด 2/69' } },
+        { name:'สำรวจช่องทางที่ทราบข่าวสารการสมัครเรียน', students:0, error:'หาคอลัมน์ชื่อนักเรียนไม่เจอ (ต้องมีชื่อที่ขึ้นต้นด้วย นาย / นางสาว / ด.ญ. ฯลฯ)' },
+        { name:'สำเนาของ มอบตัว 1/69 ปีการศึกษา 2569', students:296, special:12, how:'ข้อมูล', cols:{ app:'B', name:'F' } }
+      ] }, 700);
+    },
+    syncNow: function(){ return new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('หน้าตัวอย่างดึงข้อมูลจริงไม่ได้ ต้องติดตั้งใน Google Apps Script ก่อน')); }, 500); }); },
+    setAutoSync: function(){ return new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('หน้าตัวอย่างตั้งค่าไม่ได้ ต้องติดตั้งใน Google Apps Script ก่อน')); }, 300); }); },
+    saveSettings: function(){ return new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('หน้าตัวอย่างตั้งค่าไม่ได้ ต้องติดตั้งใน Google Apps Script ก่อน')); }, 300); }); },
+    simulate: function(){
+      var cand = rows.filter(function(x){ return !x.locked && x.status !== 'เข้าแล้ว'; });
+      var x = cand.length ? cand[Math.floor(Math.random() * cand.length)] : rows[1];
+      if (Math.random() < 0.25) { x.status = 'ไม่ต้องเข้า'; x.locked = true; } else { x.status = 'เข้าแล้ว'; }
+      return x.name + ' เป็น "' + x.status + '"';
+    }
+  };
+})();
+
+if (!GAS && !API) {
+  $('#demoBar').hidden = false;
+  $('#btnSimulate').addEventListener('click', function(){
+    toast('จำลอง: มีคนแก้สถานะของ ' + Demo.simulate() + ' ในชีต หน้านี้จะเห็นในรอบซิงก์ถัดไป');
+  });
+}
+
+netState();
+// ---------- start ----------
+// ลิงก์ลับ: ...#k=กุญแจ → ใช้แลกตั๋ว แล้วลบกุญแจออกจากแถบที่อยู่ (กุญแจไม่ถูกส่งไปที่ GitHub และไม่ถูกเก็บในเครื่อง)
+function takeLinkKey(hash){
+  var m = /(?:^|[#&])k=([\w-]{16,64})/.exec(String(hash || ''));
+  if (!m) return;
+  S.linkKey = m[1];
+  if (!GAS) { try { history.replaceState(history.state, '', location.pathname + location.search); } catch(e){} }
+}
+function startRoom(){
+  return new Promise(function(res){
+    var saved = store.get('room') || null;
+    if (GAS && google.script.url) {
+      try { google.script.url.getLocation(function(loc){ var p = (loc && loc.parameter) || {}; takeLinkKey(loc && loc.hash); if (p.room) { S.urlMajor = p.major || ''; S.urlTerm = p.term || ''; } res(p.room || saved); }); return; } catch(e){}
+    }
+    if (!GAS) takeLinkKey(location.hash);
+    if (API) {
+      try {
+        var q = new URLSearchParams(location.search), room = q.get('room');
+        if (room) { S.urlMajor = q.get('major') || ''; S.urlTerm = q.get('term') || ''; }
+        return res(room || saved);
+      } catch(e){}
+    }
+    res(saved);
+  });
+}
+// ข้อความระหว่างรอ: บอกผู้ใช้ว่ายังทำงานอยู่ และต้องทำอะไรถ้านานเกินไป
+var bootTimers = [];
+function bootMsg(t){ var p = $('#boot p'); if (p) p.textContent = t; }
+function clearBootTimers(){ bootTimers.forEach(clearTimeout); bootTimers = []; }
+bootTimers.push(setTimeout(function(){ bootMsg('กำลังเปิดระบบ… ครั้งแรกหลังไม่มีคนใช้สักพัก Google อาจใช้เวลา 5–15 วินาที'); }, 4000));
+bootTimers.push(setTimeout(function(){ bootMsg('ยังโหลดอยู่… ถ้าเกิน 1 นาที ลองกดรีเฟรช หรือเช็กอินเทอร์เน็ต'); }, 20000));
+
+startRoom().then(function(r){
+  S.room = r || null; S.term = validTerm(S.urlTerm) ? S.urlTerm : ''; $('#termIn').value = S.term;
+  S.major = (S.urlMajor !== undefined ? S.urlMajor : store.get('major')) || 'all';
+  // ประวัติเริ่มต้น = หน้าแรก · ถ้าเปิดมาที่ห้องเลย (ลิงก์ห้อง / ห้องที่ดูค้างไว้) กดย้อนกลับแล้วไปหน้าแรกก่อน ไม่ออกจากเว็บทันที
+  (function(){
+    var room = S.room, major = S.major;
+    NAV.depth = 0; S.room = null; S.major = 'all'; navReplace();
+    S.room = room; S.major = major;
+    if (room) navPush();
+  })();
+  // เปิดจากลิงก์ลับ → แลกกุญแจเป็นตั๋วก่อน แล้วค่อยโหลดข้อมูล
+  if (S.linkKey) {
+    call('checkAccess', S.linkKey).then(function(a){
+      if (a && a.ok && a.token) { S.pin = a.token; store.set('pin', a.token); }
+      else if (a && a.ok) { S.pin = ''; }
+      else { S.pin = ''; store.set('pin', ''); }
+    }).catch(function(){}).then(function(){ S.linkKey = ''; startLoad(); });
+    return;
+  }
+  // มีตั๋ว/รหัสเดิม → ตรวจและต่ออายุตั๋ว (รหัสจริงจากเวอร์ชันเก่าจะถูกแลกเป็นตั๋ว)
+  if (S.pin) {
+    call('checkAccess', S.pin).then(function(a){ if (a && a.ok && a.token && a.token !== S.pin) { S.pin = a.token; store.set('pin', a.token); } }).catch(function(){});
+  }
+  startLoad();
+}).catch(function(e){ setSync('err', e.message); $('#boot').innerHTML = '<div class="errbox"><b>เชื่อมต่อไม่ได้</b><br>' + esc(e.message) + '</div>'; });
+
+function startLoad(){
+  // ขอ 2 อย่างพร้อมกัน: สำเนาล่าสุด (เร็ว) + ข้อมูลสดจากชีต
+  call('getSnapshot', S.pin).then(function(snap){
+    if (snap && !S.data) { S.last = Date.parse(snap.time) || Date.now(); clearBootTimers(); applyData(snap); tickSync(); }
+  }).catch(function(){});
+  load();
+}
+})();
+</script>
+
+<!-- จบไฟล์ Index.html : บรรทัดสุดท้ายต้องเป็นบรรทัดนี้ -->
