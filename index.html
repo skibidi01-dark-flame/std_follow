@@ -1199,9 +1199,9 @@ function tableColorStyle(c){
   if (!/^#[0-9a-f]{6}$/.test(c)) return '';
   return ' data-tc style="--fc:' + c + '"';
 }
-function isSpecial(x){ return x.ftype === 'กรณีพิเศษ'; }
+function isFinSpecial(x){ return x.ftype === 'กรณีพิเศษ'; }
 function specialNoteHTML(x){
-  return isSpecial(x) ? '<div class="note"><span class="ntag nsp"' + tableColorStyle(x.fcolor) + '>กรณีพิเศษ</span><span class="ntext">' +
+  return isFinSpecial(x) ? '<div class="note"><span class="ntag nsp"' + tableColorStyle(x.fcolor) + '>กรณีพิเศษ</span><span class="ntext">' +
     (x.fnote ? esc(x.fnote) : '<span style="color:var(--faint)">ไม่มีหมายเหตุ</span>') + '</span></div>' : '';
 }
 function rowHTML(x){
